@@ -56,6 +56,17 @@ func (ui *UI) Content() fyne.CanvasObject {
 
 // initUI initializes all UI components
 func (ui *UI) initUI() {
+	// Load logo
+	logo, err := fyne.LoadResourceFromPath("assets/michishirube-logo.png")
+	var logoImage *canvas.Image
+	if err != nil {
+		log.Printf("Warning: Failed to load logo: %v", err)
+	} else {
+		logoImage = canvas.NewImageFromResource(logo)
+		logoImage.FillMode = canvas.ImageFillContain
+		logoImage.SetMinSize(fyne.NewSize(200, 60))
+	}
+
 	// Create search bar
 	ui.searchEntry = widget.NewEntry()
 	ui.searchEntry.SetPlaceHolder("Search links...")
@@ -66,6 +77,18 @@ func (ui *UI) initUI() {
 		ui.searchLinks(s)
 	}
 	searchContainer := container.NewBorder(nil, nil, nil, searchButton, ui.searchEntry)
+
+	// Create header with logo and search
+	var headerContainer *fyne.Container
+	if logoImage != nil {
+		headerContainer = container.NewBorder(
+			nil, nil,
+			container.NewPadded(logoImage),
+			nil,
+			searchContainer)
+	} else {
+		headerContainer = searchContainer
+	}
 
 	// Create topic tree
 	ui.topicTree = ui.createTopicTree()
@@ -109,7 +132,7 @@ func (ui *UI) initUI() {
 
 	// Main layout
 	ui.content = container.NewBorder(
-		searchContainer,
+		headerContainer,
 		nil, nil, nil,
 		split,
 	)
@@ -189,6 +212,12 @@ func (ui *UI) createTopicTree() *widget.Tree {
 
 // createLinkList creates and configures the link list widget
 func (ui *UI) createLinkList() *widget.List {
+	// Load default thumbnail (logo)
+	defaultThumbnail, err := fyne.LoadResourceFromPath("assets/michishirube-logo.png")
+	if err != nil {
+		log.Printf("Warning: Failed to load default thumbnail: %v", err)
+	}
+
 	list := widget.NewList(
 		func() int {
 			return len(ui.links)
@@ -198,147 +227,87 @@ func (ui *UI) createLinkList() *widget.List {
 			title := widget.NewLabel("Template Title")
 			title.TextStyle = fyne.TextStyle{Bold: true}
 
-			url := widget.NewLabel("https://example.com")
+			url := widget.NewLabel("Template URL")
 			url.TextStyle = fyne.TextStyle{Italic: true}
 
-			textContainer := container.NewVBox(title, url)
+			thumbnail := widget.NewIcon(theme.FileIcon())
 
-			// Placeholder for thumbnail
-			thumbnail := canvas.NewImageFromResource(theme.FileImageIcon())
-			thumbnail.SetMinSize(fyne.NewSize(32, 32))
-			thumbnailContainer := container.NewPadded(thumbnail)
-
-			// Action buttons
 			openButton := widget.NewButtonWithIcon("", theme.NavigateNextIcon(), nil)
-			moveButton := widget.NewButtonWithIcon("", theme.ContentCutIcon(), nil)
+			moveButton := widget.NewButtonWithIcon("", theme.MoreVerticalIcon(), nil)
 			deleteButton := widget.NewButtonWithIcon("", theme.DeleteIcon(), nil)
 
-			actions := container.NewHBox(openButton, moveButton, deleteButton)
-
-			// Create a container with a consistent structure
-			// The border container has the following structure:
-			// - Top: nil
-			// - Bottom: nil
-			// - Left: thumbnailContainer
-			// - Right: actions
-			// - Center: textContainer
 			return container.NewBorder(
 				nil, nil,
-				thumbnailContainer,
-				actions,
-				textContainer,
+				container.NewHBox(thumbnail),
+				container.NewHBox(openButton, moveButton, deleteButton),
+				container.NewVBox(title, url),
 			)
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			if id >= len(ui.links) {
-				return // Safety check to prevent index out of range
+				return
 			}
 
 			link := ui.links[id]
 
-			// Safely access the border container
-			border, ok := item.(*fyne.Container)
-			if !ok {
-				log.Printf("Error: item is not a Container")
-				return
-			}
+			// Extract components from the container
+			border := item.(*fyne.Container)
+			leftContainer := border.Objects[1].(*fyne.Container)
+			thumbnail := leftContainer.Objects[0].(*widget.Icon)
 
-			// In a border container, the layout is:
-			// Objects[0] = Center (textContainer)
-			// Objects[1] = Left (thumbnailContainer) - if present
-			// Objects[2] = Right (actions) - if present
+			rightContainer := border.Objects[2].(*fyne.Container)
+			openButton := rightContainer.Objects[0].(*widget.Button)
+			moveButton := rightContainer.Objects[1].(*widget.Button)
+			deleteButton := rightContainer.Objects[2].(*widget.Button)
 
-			// Get the text container (center)
-			if len(border.Objects) < 1 {
-				log.Printf("Error: border container has no center object")
-				return
-			}
+			contentContainer := border.Objects[3].(*fyne.Container)
+			title := contentContainer.Objects[0].(*widget.Label)
+			url := contentContainer.Objects[1].(*widget.Label)
 
-			textContainer, ok := border.Objects[0].(*fyne.Container)
-			if !ok {
-				log.Printf("Error: center object is not a Container")
-				return
-			}
+			// Update components with link data
+			title.SetText(link.Name)
+			url.SetText(link.URL)
 
-			// Update text labels
-			if len(textContainer.Objects) >= 2 {
-				if title, ok := textContainer.Objects[0].(*widget.Label); ok {
-					title.SetText(link.Name)
+			// Set thumbnail
+			if link.Thumbnail != "" {
+				// Try to load custom thumbnail
+				customThumb, err := fyne.LoadResourceFromPath(link.Thumbnail)
+				if err == nil {
+					thumbnail.SetResource(customThumb)
+				} else {
+					thumbnail.SetResource(theme.FileImageIcon())
 				}
-
-				if urlLabel, ok := textContainer.Objects[1].(*widget.Label); ok {
-					urlLabel.SetText(link.URL)
+			} else {
+				// Use default thumbnail if available, otherwise fallback to file icon
+				if defaultThumbnail != nil {
+					thumbnail.SetResource(defaultThumbnail)
+				} else {
+					thumbnail.SetResource(theme.FileIcon())
 				}
-			}
-
-			// Get the thumbnail container (left)
-			if len(border.Objects) < 2 {
-				log.Printf("Error: border container missing left object")
-				return
-			}
-
-			leftContainer, ok := border.Objects[1].(*fyne.Container)
-			if !ok {
-				log.Printf("Error: left object is not a Container")
-				return
-			}
-
-			// Update thumbnail
-			if len(leftContainer.Objects) > 0 {
-				if thumbnail, ok := leftContainer.Objects[0].(*canvas.Image); ok {
-					if link.Thumbnail != "" {
-						thumbnail.Resource = theme.FileImageIcon()
-					} else {
-						thumbnail.Resource = theme.FileIcon()
-					}
-				}
-			}
-
-			// Get the actions container (right)
-			if len(border.Objects) < 3 {
-				log.Printf("Error: border container missing right object")
-				return
-			}
-
-			actionsContainer, ok := border.Objects[2].(*fyne.Container)
-			if !ok {
-				log.Printf("Error: right object is not a Container")
-				return
 			}
 
 			// Update action buttons
-			if len(actionsContainer.Objects) >= 3 {
-				// Open button
-				if openButton, ok := actionsContainer.Objects[0].(*widget.Button); ok {
-					openButton.OnTapped = func() {
-						fyne.CurrentApp().OpenURL(mustParseURL(link.URL))
-					}
-				}
+			openButton.OnTapped = func() {
+				fyne.CurrentApp().OpenURL(mustParseURL(link.URL))
+			}
 
-				// Move button
-				if moveButton, ok := actionsContainer.Objects[1].(*widget.Button); ok {
-					moveButton.OnTapped = func() {
-						ui.showMoveDialog(link.ID)
-					}
-				}
+			moveButton.OnTapped = func() {
+				ui.showMoveDialog(link.ID)
+			}
 
-				// Delete button
-				if deleteButton, ok := actionsContainer.Objects[2].(*widget.Button); ok {
-					deleteButton.OnTapped = func() {
-						dialog.ShowConfirm("Delete Link",
-							fmt.Sprintf("Are you sure you want to delete '%s'?", link.Name),
-							func(confirmed bool) {
-								if confirmed {
-									err := ui.linkService.DeleteLink(link.ID)
-									if err != nil {
-										dialog.ShowError(err, ui.window)
-										return
-									}
-									ui.refreshLinks()
-								}
-							}, ui.window)
-					}
-				}
+			deleteButton.OnTapped = func() {
+				dialog.ShowConfirm("Delete Link",
+					fmt.Sprintf("Are you sure you want to delete '%s'?", link.Name),
+					func(confirmed bool) {
+						if confirmed {
+							err := ui.linkService.DeleteLink(link.ID)
+							if err != nil {
+								dialog.ShowError(err, ui.window)
+								return
+							}
+							ui.refreshLinks()
+						}
+					}, ui.window)
 			}
 		},
 	)

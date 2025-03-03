@@ -14,6 +14,15 @@ import (
 func main() {
 	// Initialize the application
 	a := app.New()
+
+	// Set application icon
+	icon, err := fyne.LoadResourceFromPath("assets/michishirube-logo.png")
+	if err != nil {
+		log.Printf("Warning: Failed to load application icon: %v", err)
+	} else {
+		a.SetIcon(icon)
+	}
+
 	w := a.NewWindow("Michishirube - Link Organizer")
 
 	// Set a reasonable default size

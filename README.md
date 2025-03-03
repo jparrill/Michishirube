@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/michishirube-logo.png" alt="Michishirube Logo" width="300">
+</p>
+
 # Michishirube
 
 A desktop application for organizing links to websites, built with Go and Fyne.

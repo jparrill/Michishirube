@@ -23,3 +23,21 @@ go.work.sum
 
 # env file
 .env
+
+# Application binary
+michishirube
+bin/
+
+# Database files
+*.db
+*.db-journal
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db

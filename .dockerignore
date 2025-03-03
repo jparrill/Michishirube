@@ -1,0 +1,37 @@
+# Git
+.git
+.gitignore
+
+# Build artifacts
+bin/
+*.exe
+michishirube
+
+# Database files
+*.db
+*.db-journal
+
+# IDE files
+.idea/
+.vscode/
+
+# Temporary files
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Test files
+*_test.go
+coverage.*
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# Misc
+README.md
+LICENSE

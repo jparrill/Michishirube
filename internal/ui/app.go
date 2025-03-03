@@ -78,16 +78,25 @@ func (ui *UI) initUI() {
 	}
 	searchContainer := container.NewBorder(nil, nil, nil, searchButton, ui.searchEntry)
 
-	// Create header with logo and search
+	// Create title label
+	titleLabel := widget.NewLabelWithStyle("Michishirube", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+
+	// Create header with logo, centered title, and search
 	var headerContainer *fyne.Container
 	if logoImage != nil {
+		// Left: logo, Center: title, Right: search
 		headerContainer = container.NewBorder(
 			nil, nil,
 			container.NewPadded(logoImage),
-			nil,
-			searchContainer)
+			container.NewPadded(searchContainer),
+			container.NewCenter(titleLabel))
 	} else {
-		headerContainer = searchContainer
+		// No logo, just title and search
+		headerContainer = container.NewBorder(
+			nil, nil,
+			nil,
+			container.NewPadded(searchContainer),
+			container.NewCenter(titleLabel))
 	}
 
 	// Create topic tree

@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="assets/michishirube-logo.png" alt="Michishirube Logo" width="300">
-</p>
+<img src="assets/michishirube-logo.png" alt="Michishirube Logo" width="100" align="left" style="margin-right: 20px; margin-top: -30px;">
 
 # Michishirube
 

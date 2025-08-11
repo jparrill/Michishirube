@@ -1,0 +1,807 @@
+openapi: 3.0.3
+info:
+  title: Michishirube API
+  description: Personal task organization tool for developers
+  version: 1.0.0
+  contact:
+    name: Michishirube
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080/api
+    description: Local development server
+
+paths:
+  /tasks:
+    get:
+      summary: List tasks
+      description: Retrieve a list of tasks with optional filtering
+      parameters:
+        - name: status
+          in: query
+          description: Filter by status (comma-separated)
+          required: false
+          schema:
+            type: string
+            example: "new,in_progress"
+        - name: priority
+          in: query
+          description: Filter by priority (comma-separated)
+          required: false
+          schema:
+            type: string
+            example: "high,critical"
+        - name: tags
+          in: query
+          description: Filter by tags (comma-separated)
+          required: false
+          schema:
+            type: string
+            example: "k8s,memory"
+        - name: include_archived
+          in: query
+          description: Include archived tasks
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          description: Maximum number of results
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 200
+        - name: offset
+          in: query
+          description: Number of results to skip
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskListResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Create a new task
+      description: Create a new task with the provided information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/{id}:
+    get:
+      summary: Get task by ID
+      description: Retrieve a specific task with its links and comments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskWithDetails'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Update task
+      description: Update a task with new information
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete task
+      description: Delete a task and all associated links and comments
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Task deleted successfully
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/{id}/status:
+    patch:
+      summary: Update task status
+      description: Update only the status of a task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStatusRequest'
+      responses:
+        '200':
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/{taskId}/links:
+    get:
+      summary: Get links for task
+      description: Retrieve all links associated with a task
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of links
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkListResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Add link to task
+      description: Add a new link to a task
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLinkRequest'
+      responses:
+        '201':
+          description: Link created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Link'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /links/{id}:
+    put:
+      summary: Update link
+      description: Update an existing link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLinkRequest'
+      responses:
+        '200':
+          description: Link updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Link'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete link
+      description: Delete a link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Link deleted successfully
+        '404':
+          description: Link not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tasks/{taskId}/comments:
+    get:
+      summary: Get comments for task
+      description: Retrieve all comments for a task
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentListResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Add comment to task
+      description: Add a new comment to a task
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /comments/{id}:
+    delete:
+      summary: Delete comment
+      description: Delete a comment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Comment deleted successfully
+        '404':
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /search:
+    get:
+      summary: Search tasks
+      description: Search tasks by title, Jira ID, or content
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+            example: "OCPBUGS-1234"
+        - name: include_archived
+          in: query
+          description: Include archived tasks
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: limit
+          in: query
+          description: Maximum number of results
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /search/suggestions:
+    get:
+      summary: Get search suggestions
+      description: Get suggestions for tags and Jira IDs
+      parameters:
+        - name: type
+          in: query
+          description: Type of suggestions to return
+          required: false
+          schema:
+            type: string
+            enum: [tags, jira_ids, all]
+            default: all
+      responses:
+        '200':
+          description: Search suggestions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuggestionsResponse'
+
+components:
+  schemas:
+    Task:
+      type: object
+      required:
+        - id
+        - jira_id
+        - title
+        - priority
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        jira_id:
+          type: string
+          example: "OCPBUGS-1234"
+          description: Jira ticket ID or "NO-JIRA"
+        title:
+          type: string
+          example: "Fix memory leak in pod controller"
+        priority:
+          $ref: '#/components/schemas/Priority'
+        status:
+          $ref: '#/components/schemas/Status'
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["k8s", "memory"]
+        blockers:
+          type: array
+          items:
+            type: string
+          example: ["Waiting for review from @team-lead"]
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T14:20:00Z"
+
+    TaskWithDetails:
+      allOf:
+        - $ref: '#/components/schemas/Task'
+        - type: object
+          properties:
+            links:
+              type: array
+              items:
+                $ref: '#/components/schemas/Link'
+            comments:
+              type: array
+              items:
+                $ref: '#/components/schemas/Comment'
+
+    Link:
+      type: object
+      required:
+        - id
+        - task_id
+        - type
+        - url
+      properties:
+        id:
+          type: string
+          format: uuid
+        task_id:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/LinkType'
+        url:
+          type: string
+          format: uri
+          example: "https://github.com/org/repo/pull/456"
+        title:
+          type: string
+          example: "Fix memory leak"
+        status:
+          type: string
+          example: "merged"
+        metadata:
+          type: string
+          description: JSON string with type-specific data
+          example: '{"pr_number": 456, "author": "user123"}'
+
+    Comment:
+      type: object
+      required:
+        - id
+        - task_id
+        - content
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        task_id:
+          type: string
+          format: uuid
+        content:
+          type: string
+          example: "Found the root cause in the controller reconcile loop"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T11:00:00Z"
+
+    Priority:
+      type: string
+      enum: [minor, normal, high, critical]
+      example: "high"
+
+    Status:
+      type: string
+      enum: [new, in_progress, blocked, done, archived]
+      example: "in_progress"
+
+    LinkType:
+      type: string
+      enum: [pull_request, slack_thread, jira_ticket, documentation, other]
+      example: "pull_request"
+
+    CreateTaskRequest:
+      type: object
+      required:
+        - jira_id
+        - title
+        - priority
+      properties:
+        jira_id:
+          type: string
+          example: "OCPBUGS-5678"
+        title:
+          type: string
+          example: "Implement new feature"
+        priority:
+          $ref: '#/components/schemas/Priority'
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["feature", "api"]
+        blockers:
+          type: array
+          items:
+            type: string
+          example: []
+
+    UpdateTaskRequest:
+      type: object
+      required:
+        - jira_id
+        - title
+        - priority
+        - status
+      properties:
+        jira_id:
+          type: string
+        title:
+          type: string
+        priority:
+          $ref: '#/components/schemas/Priority'
+        status:
+          $ref: '#/components/schemas/Status'
+        tags:
+          type: array
+          items:
+            type: string
+        blockers:
+          type: array
+          items:
+            type: string
+
+    UpdateStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+
+    CreateLinkRequest:
+      type: object
+      required:
+        - type
+        - url
+      properties:
+        type:
+          $ref: '#/components/schemas/LinkType'
+        url:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: string
+        metadata:
+          type: string
+          description: JSON string with type-specific data
+
+    UpdateLinkRequest:
+      type: object
+      required:
+        - type
+        - url
+      properties:
+        type:
+          $ref: '#/components/schemas/LinkType'
+        url:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: string
+        metadata:
+          type: string
+
+    CreateCommentRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          example: "Found the root cause in the controller reconcile loop"
+
+    TaskListResponse:
+      type: object
+      required:
+        - tasks
+        - total
+        - limit
+        - offset
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        total:
+          type: integer
+          example: 42
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+
+    LinkListResponse:
+      type: object
+      required:
+        - links
+      properties:
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    CommentListResponse:
+      type: object
+      required:
+        - comments
+      properties:
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+
+    SearchResponse:
+      type: object
+      required:
+        - tasks
+        - query
+        - total
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        query:
+          type: string
+          example: "OCPBUGS-1234"
+        total:
+          type: integer
+          example: 1
+
+    SuggestionsResponse:
+      type: object
+      required:
+        - suggestions
+      properties:
+        suggestions:
+          type: object
+          properties:
+            tags:
+              type: array
+              items:
+                type: string
+              example: ["k8s", "memory", "frontend", "bug"]
+            jira_ids:
+              type: array
+              items:
+                type: string
+              example: ["OCPBUGS-1234", "OCPBUGS-5678"]
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: "Task not found"
+        code:
+          type: string
+          example: "TASK_NOT_FOUND"

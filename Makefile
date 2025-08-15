@@ -1,6 +1,6 @@
 # Michishirube Makefile
 
-.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up fixtures-update fixtures-validate generate dev-test
+.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up fixtures-update fixtures-validate generate docs dev-test
 
 # Build the application
 build:
@@ -18,6 +18,19 @@ generate:
 	@echo "Generating code..."
 	go generate ./...
 	@echo "Code generation completed"
+
+# Generate OpenAPI documentation
+docs:
+	@echo "Installing swag if needed..."
+	@which swag > /dev/null || go install github.com/swaggo/swag/cmd/swag@latest
+	@echo "Generating OpenAPI documentation..."
+	@mkdir -p docs
+	swag init -g cmd/server/main.go --output docs
+	@echo "OpenAPI documentation generated in docs/ directory"
+	@echo "Available endpoints:"
+	@echo "  http://localhost:8080/docs - Custom Swagger UI"
+	@echo "  http://localhost:8080/openapi.yaml - YAML specification"
+	@echo "  http://localhost:8080/swagger/doc.json - JSON specification"
 
 # Run complete test suite
 test: generate fixtures-validate
@@ -79,6 +92,7 @@ lint:
 # Clean build artifacts
 clean:
 	rm -rf build/
+	rm -rf docs/
 	rm -f *.db
 	rm -f config.yaml
 	rm -f michishirube
@@ -129,4 +143,5 @@ test-help:
 	@echo "  make fixtures-validate - Validate fixture data for issues"
 	@echo "  make fixtures-update   - Update fixtures with current data"
 	@echo "  make generate          - Generate mocks and code"
+	@echo "  make docs              - Generate OpenAPI documentation"
 	@echo "  make dev-test          - Update fixtures then run full suite"

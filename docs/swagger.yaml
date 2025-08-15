@@ -1,0 +1,743 @@
+basePath: /api
+definitions:
+  models.Comment:
+    properties:
+      content:
+        description: Comment content
+        example: Found the root cause in the controller
+        type: string
+      created_at:
+        description: Creation timestamp
+        example: "2024-01-15T11:00:00Z"
+        type: string
+      id:
+        description: Unique identifier
+        example: 550e8400-e29b-41d4-a716-446655440002
+        type: string
+      task_id:
+        description: Associated task ID
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  models.CreateCommentRequest:
+    properties:
+      content:
+        description: Comment content
+        example: Found the root cause in the controller
+        type: string
+      task_id:
+        description: Associated task ID
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  models.CreateCommentResponse:
+    properties:
+      id:
+        description: Comment ID
+        example: 550e8400-e29b-41d4-a716-446655440002
+        type: string
+      message:
+        description: Success message
+        example: Comment created successfully
+        type: string
+    type: object
+  models.CreateLinkRequest:
+    properties:
+      metadata:
+        description: Additional metadata
+        type: string
+      status:
+        description: Link status
+        example: merged
+        type: string
+      task_id:
+        description: Associated task ID
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      title:
+        description: Display title
+        example: Fix memory leak
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/models.LinkType'
+        description: Link type
+        example: pull_request
+      url:
+        description: Link URL
+        example: https://github.com/org/repo/pull/456
+        type: string
+    type: object
+  models.CreateTaskRequest:
+    properties:
+      blockers:
+        description: Blocking issues
+        items:
+          type: string
+        type: array
+      jira_id:
+        description: Jira ticket ID
+        example: OCPBUGS-5678
+        type: string
+      priority:
+        allOf:
+        - $ref: '#/definitions/models.Priority'
+        description: Task priority
+        example: high
+      tags:
+        description: Task tags
+        items:
+          type: string
+        type: array
+      title:
+        description: Task title
+        example: Implement new feature
+        type: string
+    type: object
+  models.DeleteCommentResponse:
+    properties:
+      message:
+        description: Success message
+        example: Comment deleted successfully
+        type: string
+    type: object
+  models.ErrorResponse:
+    properties:
+      code:
+        description: Error code
+        example: TASK_NOT_FOUND
+        type: string
+      error:
+        description: Error message
+        example: Task not found
+        type: string
+    type: object
+  models.Link:
+    properties:
+      id:
+        description: Unique identifier
+        example: 550e8400-e29b-41d4-a716-446655440001
+        type: string
+      metadata:
+        description: Additional metadata
+        example: '{"pr_number": 456, "author": "user"}'
+        type: string
+      status:
+        description: Link status
+        example: merged
+        type: string
+      task_id:
+        description: Associated task ID
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      title:
+        description: Display title
+        example: Fix memory leak
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/models.LinkType'
+        description: Type of link
+        example: pull_request
+      url:
+        description: Link URL
+        example: https://github.com/org/repo/pull/456
+        type: string
+    type: object
+  models.LinkType:
+    enum:
+    - pull_request
+    - slack_thread
+    - jira_ticket
+    - documentation
+    - other
+    type: string
+    x-enum-varnames:
+    - PullRequest
+    - SlackThread
+    - JiraTicket
+    - Documentation
+    - Other
+  models.PatchTaskRequest:
+    properties:
+      blockers:
+        description: Blocking issues
+        items:
+          type: string
+        type: array
+      priority:
+        allOf:
+        - $ref: '#/definitions/models.Priority'
+        description: Task priority
+        example: high
+      status:
+        allOf:
+        - $ref: '#/definitions/models.Status'
+        description: Task status
+        example: in_progress
+      tags:
+        description: Task tags
+        items:
+          type: string
+        type: array
+      title:
+        description: Task title
+        example: Updated title
+        type: string
+    type: object
+  models.Priority:
+    enum:
+    - minor
+    - normal
+    - high
+    - critical
+    - normal
+    type: string
+    x-enum-varnames:
+    - Minor
+    - Normal
+    - High
+    - Critical
+    - DefaultPriority
+  models.ReportResponse:
+    properties:
+      blockers:
+        description: Blocked tasks
+        items:
+          $ref: '#/definitions/models.TaskWithDetails'
+        type: array
+      next_up:
+        description: Tasks to work on next
+        items:
+          $ref: '#/definitions/models.TaskWithDetails'
+        type: array
+      working_on:
+        description: Tasks in progress or completed
+        items:
+          $ref: '#/definitions/models.TaskWithDetails'
+        type: array
+    type: object
+  models.Status:
+    enum:
+    - new
+    - in_progress
+    - blocked
+    - done
+    - archived
+    - new
+    type: string
+    x-enum-varnames:
+    - New
+    - InProgress
+    - Blocked
+    - Done
+    - Archived
+    - DefaultStatus
+  models.Task:
+    properties:
+      blockers:
+        description: Blocking issues
+        example:
+        - Waiting for review from @team-lead
+        items:
+          type: string
+        type: array
+      created_at:
+        description: Creation timestamp
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      id:
+        description: Unique identifier
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      jira_id:
+        description: Jira ticket ID or NO-JIRA
+        example: OCPBUGS-1234
+        type: string
+      priority:
+        allOf:
+        - $ref: '#/definitions/models.Priority'
+        description: Task priority
+        example: high
+      status:
+        allOf:
+        - $ref: '#/definitions/models.Status'
+        description: Current status
+        example: in_progress
+      tags:
+        description: Associated tags
+        example:
+        - k8s
+        - memory
+        items:
+          type: string
+        type: array
+      title:
+        description: Task title
+        example: Fix memory leak in pod controller
+        type: string
+      updated_at:
+        description: Last update timestamp
+        example: "2024-01-15T14:20:00Z"
+        type: string
+    type: object
+  models.TaskListResponse:
+    properties:
+      limit:
+        description: Request limit
+        example: 20
+        type: integer
+      offset:
+        description: Request offset
+        example: 0
+        type: integer
+      tasks:
+        description: List of tasks
+        items:
+          $ref: '#/definitions/models.Task'
+        type: array
+      total:
+        description: Total number of tasks
+        example: 42
+        type: integer
+    type: object
+  models.TaskWithDetails:
+    properties:
+      blockers:
+        description: Blocking issues
+        example:
+        - Waiting for review from @team-lead
+        items:
+          type: string
+        type: array
+      comments:
+        description: Associated comments
+        items:
+          $ref: '#/definitions/models.Comment'
+        type: array
+      created_at:
+        description: Creation timestamp
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      id:
+        description: Unique identifier
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      jira_id:
+        description: Jira ticket ID or NO-JIRA
+        example: OCPBUGS-1234
+        type: string
+      links:
+        description: Associated links
+        items:
+          $ref: '#/definitions/models.Link'
+        type: array
+      priority:
+        allOf:
+        - $ref: '#/definitions/models.Priority'
+        description: Task priority
+        example: high
+      status:
+        allOf:
+        - $ref: '#/definitions/models.Status'
+        description: Current status
+        example: in_progress
+      tags:
+        description: Associated tags
+        example:
+        - k8s
+        - memory
+        items:
+          type: string
+        type: array
+      title:
+        description: Task title
+        example: Fix memory leak in pod controller
+        type: string
+      updated_at:
+        description: Last update timestamp
+        example: "2024-01-15T14:20:00Z"
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: padajuan@gmail.com
+    name: Michishirube Support
+    url: https://github.com/jparrill/michishirube
+  description: Personal task organization tool for developers
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Michishirube API
+  version: 1.0.0
+paths:
+  /comments:
+    post:
+      consumes:
+      - application/json
+      description: Create a new comment for a task
+      parameters:
+      - description: Comment to create
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CreateCommentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create a new comment
+      tags:
+      - comments
+  /comments/{id}:
+    delete:
+      description: Delete a comment by ID
+      parameters:
+      - description: Comment ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.DeleteCommentResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete comment
+      tags:
+      - comments
+  /links:
+    post:
+      consumes:
+      - application/json
+      description: Create a new link associated with a task
+      parameters:
+      - description: Link to create
+        in: body
+        name: link
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateLinkRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Link'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create a new link
+      tags:
+      - links
+  /links/{id}:
+    delete:
+      description: Delete a link by ID
+      parameters:
+      - description: Link ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete link
+      tags:
+      - links
+    get:
+      description: Retrieve a specific link by its ID
+      parameters:
+      - description: Link ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Link'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get link by ID
+      tags:
+      - links
+    put:
+      consumes:
+      - application/json
+      description: Update a link with new data
+      parameters:
+      - description: Link ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Link data
+        in: body
+        name: link
+        required: true
+        schema:
+          $ref: '#/definitions/models.Link'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Link'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update link
+      tags:
+      - links
+  /report:
+    get:
+      description: Generate an automatic status report with working_on, next_up, and
+        blockers sections
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ReportResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Generate status report
+      tags:
+      - report
+  /tasks:
+    get:
+      consumes:
+      - application/json
+      description: Get all tasks with optional filtering by status, priority, tags,
+        etc.
+      parameters:
+      - description: Filter by status (comma-separated)
+        example: '"new,in_progress"'
+        in: query
+        name: status
+        type: string
+      - description: Filter by priority (comma-separated)
+        example: '"high,critical"'
+        in: query
+        name: priority
+        type: string
+      - description: Filter by tags (comma-separated)
+        example: '"k8s,memory"'
+        in: query
+        name: tags
+        type: string
+      - default: false
+        description: Include archived tasks
+        in: query
+        name: include_archived
+        type: boolean
+      - default: 50
+        description: Maximum number of results
+        in: query
+        maximum: 200
+        minimum: 1
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of results to skip
+        in: query
+        minimum: 0
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TaskListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List tasks
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a new task with the provided information
+      parameters:
+      - description: Task to create
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Task'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create a new task
+      tags:
+      - tasks
+  /tasks/{id}:
+    delete:
+      description: Delete a task by ID
+      parameters:
+      - description: Task ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete task
+      tags:
+      - tasks
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific task with its links and comments
+      parameters:
+      - description: Task ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TaskWithDetails'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get task by ID
+      tags:
+      - tasks
+    patch:
+      consumes:
+      - application/json
+      description: Partially update a task with the provided fields (PATCH)
+      parameters:
+      - description: Task ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/models.PatchTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Task'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update task fields
+      tags:
+      - tasks
+    put:
+      consumes:
+      - application/json
+      description: Replace entire task with provided data (PUT)
+      parameters:
+      - description: Task ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Task data
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/models.Task'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Task'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update entire task
+      tags:
+      - tasks
+schemes:
+- http
+- https
+swagger: "2.0"

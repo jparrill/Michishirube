@@ -55,6 +55,21 @@ func (h *TaskHandler) HandleTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// listTasks retrieves a list of tasks with optional filtering
+// @Summary List tasks
+// @Description Get all tasks with optional filtering by status, priority, tags, etc.
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param status query string false "Filter by status (comma-separated)" example("new,in_progress")
+// @Param priority query string false "Filter by priority (comma-separated)" example("high,critical")
+// @Param tags query string false "Filter by tags (comma-separated)" example("k8s,memory")
+// @Param include_archived query boolean false "Include archived tasks" default(false)
+// @Param limit query int false "Maximum number of results" default(50) minimum(1) maximum(200)
+// @Param offset query int false "Number of results to skip" default(0) minimum(0)
+// @Success 200 {object} models.TaskListResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Router /tasks [get]
 func (h *TaskHandler) listTasks(w http.ResponseWriter, r *http.Request) {
 	filters := storage.TaskFilters{}
 	query := r.URL.Query()
@@ -112,6 +127,16 @@ func (h *TaskHandler) listTasks(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// createTask creates a new task
+// @Summary Create a new task
+// @Description Create a new task with the provided information
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param task body models.CreateTaskRequest true "Task to create"
+// @Success 201 {object} models.Task
+// @Failure 400 {object} models.ErrorResponse
+// @Router /tasks [post]
 func (h *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 	var task models.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
@@ -132,6 +157,16 @@ func (h *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// getTask retrieves a specific task by ID
+// @Summary Get task by ID
+// @Description Retrieve a specific task with its links and comments
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID" format(uuid)
+// @Success 200 {object} models.TaskWithDetails
+// @Failure 404 {object} models.ErrorResponse
+// @Router /tasks/{id} [get]
 func (h *TaskHandler) getTask(w http.ResponseWriter, r *http.Request, taskID string) {
 	task, err := h.storage.GetTask(taskID)
 	switch {
@@ -169,6 +204,18 @@ func (h *TaskHandler) getTask(w http.ResponseWriter, r *http.Request, taskID str
 	}
 }
 
+// updateTask fully updates a task
+// @Summary Update entire task
+// @Description Replace entire task with provided data (PUT)
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID" format(uuid)
+// @Param task body models.Task true "Task data"
+// @Success 200 {object} models.Task
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Router /tasks/{id} [put]
 func (h *TaskHandler) updateTask(w http.ResponseWriter, r *http.Request, taskID string) {
 	var task models.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
@@ -189,6 +236,18 @@ func (h *TaskHandler) updateTask(w http.ResponseWriter, r *http.Request, taskID 
 	}
 }
 
+// patchTask partially updates a task
+// @Summary Update task fields
+// @Description Partially update a task with the provided fields (PATCH)
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID" format(uuid)
+// @Param task body models.PatchTaskRequest true "Fields to update"
+// @Success 200 {object} models.Task
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Router /tasks/{id} [patch]
 func (h *TaskHandler) patchTask(w http.ResponseWriter, r *http.Request, taskID string) {
 	log := logger.FromContext(r.Context())
 	log.Debug("Patching task", "task_id", taskID)
@@ -278,6 +337,14 @@ func (h *TaskHandler) patchTask(w http.ResponseWriter, r *http.Request, taskID s
 	json.NewEncoder(w).Encode(existingTask)
 }
 
+// deleteTask removes a task
+// @Summary Delete task
+// @Description Delete a task by ID
+// @Tags tasks
+// @Param id path string true "Task ID" format(uuid)
+// @Success 204 "No Content"
+// @Failure 404 {object} models.ErrorResponse
+// @Router /tasks/{id} [delete]
 func (h *TaskHandler) deleteTask(w http.ResponseWriter, r *http.Request, taskID string) {
 	err := h.storage.DeleteTask(taskID)
 	switch err {
@@ -306,6 +373,14 @@ func (h *TaskHandler) HandleReport(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// generateReport creates automatic status report
+// @Summary Generate status report
+// @Description Generate an automatic status report with working_on, next_up, and blockers sections
+// @Tags report
+// @Produce json
+// @Success 200 {object} models.ReportResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /report [get]
 func (h *TaskHandler) generateReport(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
 	
@@ -446,6 +521,16 @@ func (h *TaskHandler) HandleLink(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// createLink creates a new link
+// @Summary Create a new link
+// @Description Create a new link associated with a task
+// @Tags links
+// @Accept json
+// @Produce json
+// @Param link body models.CreateLinkRequest true "Link to create"
+// @Success 201 {object} models.Link
+// @Failure 400 {object} models.ErrorResponse
+// @Router /links [post]
 func (h *TaskHandler) createLink(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
 	log.Debug("Creating new link")
@@ -506,6 +591,15 @@ func (h *TaskHandler) createLink(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(link)
 }
 
+// getLink retrieves a specific link
+// @Summary Get link by ID
+// @Description Retrieve a specific link by its ID
+// @Tags links
+// @Produce json
+// @Param id path string true "Link ID" format(uuid)
+// @Success 200 {object} models.Link
+// @Failure 404 {object} models.ErrorResponse
+// @Router /links/{id} [get]
 func (h *TaskHandler) getLink(w http.ResponseWriter, r *http.Request, linkID string) {
 	log := logger.FromContext(r.Context())
 	log.Debug("Getting link", "link_id", linkID)
@@ -525,6 +619,18 @@ func (h *TaskHandler) getLink(w http.ResponseWriter, r *http.Request, linkID str
 	json.NewEncoder(w).Encode(link)
 }
 
+// updateLink updates a link
+// @Summary Update link
+// @Description Update a link with new data
+// @Tags links
+// @Accept json
+// @Produce json
+// @Param id path string true "Link ID" format(uuid)
+// @Param link body models.Link true "Link data"
+// @Success 200 {object} models.Link
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Router /links/{id} [put]
 func (h *TaskHandler) updateLink(w http.ResponseWriter, r *http.Request, linkID string) {
 	log := logger.FromContext(r.Context())
 	log.Debug("Updating link", "link_id", linkID)
@@ -558,6 +664,14 @@ func (h *TaskHandler) updateLink(w http.ResponseWriter, r *http.Request, linkID 
 	json.NewEncoder(w).Encode(link)
 }
 
+// deleteLink removes a link
+// @Summary Delete link
+// @Description Delete a link by ID
+// @Tags links
+// @Param id path string true "Link ID" format(uuid)
+// @Success 204 "No Content"
+// @Failure 404 {object} models.ErrorResponse
+// @Router /links/{id} [delete]
 func (h *TaskHandler) deleteLink(w http.ResponseWriter, r *http.Request, linkID string) {
 	log := logger.FromContext(r.Context())
 	log.Debug("Deleting link", "link_id", linkID)
@@ -575,4 +689,122 @@ func (h *TaskHandler) deleteLink(w http.ResponseWriter, r *http.Request, linkID 
 
 	log.Info("Link deleted successfully", "link_id", linkID)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// HandleComments handles comment collection operations
+func (h *TaskHandler) HandleComments(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		h.createComment(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// HandleComment handles individual comment operations
+func (h *TaskHandler) HandleComment(w http.ResponseWriter, r *http.Request) {
+	log := logger.FromContext(r.Context())
+	
+	// Extract comment ID from URL path
+	path := strings.TrimPrefix(r.URL.Path, "/api/comments/")
+	commentID := strings.Split(path, "/")[0]
+	
+	log.Debug("HandleComment called", "comment_id", commentID, "method", r.Method)
+	
+	if commentID == "" {
+		http.Error(w, "Comment ID required", http.StatusBadRequest)
+		return
+	}
+	
+	switch r.Method {
+	case http.MethodDelete:
+		h.deleteComment(w, r, commentID)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// createComment creates a new comment
+// @Summary Create a new comment
+// @Description Create a new comment for a task
+// @Tags comments
+// @Accept json
+// @Produce json
+// @Param comment body models.CreateCommentRequest true "Comment to create"
+// @Success 200 {object} models.CreateCommentResponse
+// @Failure 400 {object} models.ErrorResponse
+// @Router /comments [post]
+func (h *TaskHandler) createComment(w http.ResponseWriter, r *http.Request) {
+	log := logger.FromContext(r.Context())
+	
+	var req struct {
+		TaskID  string `json:"task_id"`
+		Content string `json:"content"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Error("Failed to decode request body", "error", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	
+	log.Debug("Creating comment", "task_id", req.TaskID, "content_length", len(req.Content))
+	
+	// Validate input
+	if req.TaskID == "" {
+		http.Error(w, "task_id is required", http.StatusBadRequest)
+		return
+	}
+	
+	if strings.TrimSpace(req.Content) == "" {
+		http.Error(w, "content is required", http.StatusBadRequest)
+		return
+	}
+	
+	// Create comment
+	comment := &models.Comment{
+		TaskID:  req.TaskID,
+		Content: strings.TrimSpace(req.Content),
+	}
+	
+	if err := h.storage.CreateComment(comment); err != nil {
+		log.Error("Failed to create comment", "error", err)
+		http.Error(w, "Failed to create comment", http.StatusInternalServerError)
+		return
+	}
+	
+	log.Info("Comment created successfully", "comment_id", comment.ID, "task_id", req.TaskID)
+	
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"id":      comment.ID,
+		"message": "Comment created successfully",
+	})
+}
+
+// deleteComment removes a comment
+// @Summary Delete comment
+// @Description Delete a comment by ID
+// @Tags comments
+// @Param id path string true "Comment ID" format(uuid)
+// @Success 200 {object} models.DeleteCommentResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Router /comments/{id} [delete]
+func (h *TaskHandler) deleteComment(w http.ResponseWriter, r *http.Request, commentID string) {
+	log := logger.FromContext(r.Context())
+	
+	log.Debug("Deleting comment", "comment_id", commentID)
+	
+	if err := h.storage.DeleteComment(commentID); err != nil {
+		log.Error("Failed to delete comment", "error", err, "comment_id", commentID)
+		http.Error(w, "Failed to delete comment", http.StatusInternalServerError)
+		return
+	}
+	
+	log.Info("Comment deleted successfully", "comment_id", commentID)
+	
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Comment deleted successfully",
+	})
 }

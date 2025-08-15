@@ -10,7 +10,6 @@ import (
 	"michishirube/internal/storage"
 
 	"github.com/google/uuid"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type SQLiteStorage struct {
@@ -18,7 +17,7 @@ type SQLiteStorage struct {
 }
 
 func New(dbPath string) (*SQLiteStorage, error) {
-	db, err := sql.Open("sqlite3", dbPath+"?_foreign_keys=on")
+	db, err := openDB(dbPath + "?_foreign_keys=on")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}

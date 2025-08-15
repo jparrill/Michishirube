@@ -1,6 +1,6 @@
 # Michishirube Makefile
 
-.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up fixtures-update fixtures-validate generate docs dev-test
+.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up fixtures-update fixtures-validate generate docs dev-test release release-check release-snapshot
 
 # Build the application
 build:
@@ -132,6 +132,27 @@ test-search:
 dev-test:
 	make fixtures-update && make test
 
+# Release targets
+release:
+	@echo "Installing GoReleaser if needed..."
+	@which goreleaser > /dev/null || go install github.com/goreleaser/goreleaser@latest
+	@echo "Creating release..."
+	goreleaser release --clean
+
+# Check release configuration
+release-check:
+	@echo "Installing GoReleaser if needed..."
+	@which goreleaser > /dev/null || go install github.com/goreleaser/goreleaser@latest
+	@echo "Checking GoReleaser configuration..."
+	goreleaser check
+
+# Create snapshot release (for development)
+release-snapshot:
+	@echo "Installing GoReleaser if needed..."
+	@which goreleaser > /dev/null || go install github.com/goreleaser/goreleaser@latest
+	@echo "Creating snapshot release..."
+	goreleaser release --snapshot --clean
+
 # Show test help
 test-help:
 	@echo "Available test targets:"
@@ -145,3 +166,16 @@ test-help:
 	@echo "  make generate          - Generate mocks and code"
 	@echo "  make docs              - Generate OpenAPI documentation"
 	@echo "  make dev-test          - Update fixtures then run full suite"
+
+# Show release help
+release-help:
+	@echo "Available release targets:"
+	@echo "  make release           - Create and publish a release (requires git tag)"
+	@echo "  make release-check     - Check GoReleaser configuration"
+	@echo "  make release-snapshot  - Create snapshot build for development"
+	@echo ""
+	@echo "Release workflow:"
+	@echo "  1. git tag v1.0.0      - Create a version tag"
+	@echo "  2. make release-check  - Validate the configuration"
+	@echo "  3. make release-snapshot - Test with a snapshot build"
+	@echo "  4. make release        - Create and publish the release"

@@ -379,7 +379,7 @@ func TestTaskHandler_HandleTask_MethodNotAllowed(t *testing.T) {
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
 	
-	req := httptest.NewRequest(http.MethodPatch, "/api/tasks/task-123", nil)
+	req := httptest.NewRequest(http.MethodConnect, "/api/tasks/task-123", nil)
 	w := httptest.NewRecorder()
 	
 	handler.HandleTask(w, req)

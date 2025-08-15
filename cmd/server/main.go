@@ -1,7 +1,27 @@
+// Package main provides the entry point for Michishirube server
+//
+// @title Michishirube API
+// @version 1.0.0
+// @description Personal task organization tool for developers
+// @termsOfService http://swagger.io/terms/
+//
+// @contact.name Michishirube Support
+// @contact.url https://github.com/jparrill/michishirube
+// @contact.email padajuan@gmail.com
+//
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+//
+// @host localhost:8080
+// @BasePath /api
+//
+// @schemes http https
 package main
 
 import (
 	"context"
+	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -12,7 +32,27 @@ import (
 	"michishirube/internal/storage/sqlite"
 )
 
+// Build information (set by GoReleaser)
+var (
+	version = "dev"
+	commit  = "unknown"
+	date    = "unknown"
+	builtBy = "unknown"
+)
+
 func main() {
+	// Parse command line flags
+	var showVersion = flag.Bool("version", false, "Show version information")
+	flag.Parse()
+
+	// Handle version flag
+	if *showVersion {
+		fmt.Printf("Michishirube %s\n", version)
+		fmt.Printf("  Commit: %s\n", commit)
+		fmt.Printf("  Built:  %s\n", date)
+		fmt.Printf("  By:     %s\n", builtBy)
+		os.Exit(0)
+	}
 	// Setup base logger with INFO level initially
 	baseLogger := logger.NewLogger(slog.LevelInfo)
 	ctx := logger.WithLogger(context.Background(), baseLogger)

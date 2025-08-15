@@ -1,6 +1,6 @@
 # Michishirube Makefile
 
-.PHONY: build run test lint clean docker-build docker-up fixtures-update fixtures-validate
+.PHONY: build run test lint clean docker-build docker-up fixtures-update fixtures-validate generate
 
 # Build the application
 build:
@@ -10,8 +10,16 @@ build:
 run:
 	go run ./cmd/server
 
-# Run tests
-test:
+# Generate code (mocks, etc.)
+generate:
+	@echo "Installing mockgen if needed..."
+	@which mockgen > /dev/null || go install github.com/golang/mock/mockgen@latest
+	@echo "Generating code..."
+	go generate ./...
+	@echo "Code generation completed"
+
+# Run tests (generates code first)
+test: generate
 	go test ./...
 
 # Run tests with coverage

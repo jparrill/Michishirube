@@ -1,0 +1,51 @@
+{
+  "final_comments": [
+    {
+      "id": "workflow-comment-001",
+      "task_id": "workflow-task-001",
+      "content": "Started implementation using JWT tokens. Need to review security best practices.",
+      "created_at": "2025-08-15T18:02:41.886911+02:00"
+    },
+    {
+      "id": "workflow-comment-002",
+      "task_id": "workflow-task-001",
+      "content": "Security team provided feedback. Need to implement token rotation and proper expiration handling.",
+      "created_at": "2025-08-15T18:02:41.887222+02:00"
+    }
+  ],
+  "final_links": [
+    {
+      "id": "workflow-link-001",
+      "task_id": "workflow-task-001",
+      "type": "pull_request",
+      "url": "https://github.com/company/app/pull/123",
+      "title": "Add JWT authentication middleware",
+      "status": "open",
+      "metadata": ""
+    },
+    {
+      "id": "workflow-link-002",
+      "task_id": "workflow-task-001",
+      "type": "documentation",
+      "url": "https://docs.company.com/auth-design",
+      "title": "Authentication Design Document",
+      "status": "draft",
+      "metadata": ""
+    }
+  ],
+  "final_task": {
+    "id": "workflow-task-001",
+    "jira_id": "WORKFLOW-001",
+    "title": "Implement user authentication",
+    "priority": "high",
+    "status": "done",
+    "tags": [
+      "auth",
+      "security",
+      "backend"
+    ],
+    "blockers": [],
+    "created_at": "2025-08-15T18:02:41.883935+02:00",
+    "updated_at": "2025-08-15T18:02:41.885855+02:00"
+  }
+}

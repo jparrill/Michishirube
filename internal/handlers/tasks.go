@@ -134,7 +134,13 @@ func (h *TaskHandler) getTask(w http.ResponseWriter, r *http.Request, taskID str
 	case err == nil:
 		// Get related links and comments
 		links, _ := h.storage.GetTaskLinks(taskID)
+		if links == nil {
+			links = []*models.Link{}
+		}
 		comments, _ := h.storage.GetTaskComments(taskID)
+		if comments == nil {
+			comments = []*models.Comment{}
+		}
 
 		response := map[string]interface{}{
 			"id":         task.ID,

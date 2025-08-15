@@ -36,16 +36,21 @@ func Load(ctx context.Context) (*Config, error) {
 
 	log.Info("Loading configuration with defaults", "port", config.Port, "db_path", config.DBPath, "log_level", config.LogLevel)
 
-	// Try to read from config.yaml
-	if data, err := os.ReadFile("config.yaml"); err == nil {
-		log.Info("Found config.yaml, parsing")
+	// Try to read from config file (CONFIG_PATH env var or default config.yaml)
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "config.yaml"
+	}
+	
+	if data, err := os.ReadFile(configPath); err == nil {
+		log.Info("Found config file, parsing", "path", configPath)
 		if err := yaml.Unmarshal(data, config); err != nil {
-			log.Error("Failed to parse config.yaml", "error", err)
+			log.Error("Failed to parse config file", "path", configPath, "error", err)
 			return nil, ErrConfigParse
 		}
-		log.Info("Configuration loaded from config.yaml", "port", config.Port, "db_path", config.DBPath, "log_level", config.LogLevel)
+		log.Info("Configuration loaded from file", "path", configPath, "port", config.Port, "db_path", config.DBPath, "log_level", config.LogLevel)
 	} else {
-		log.Info("No config.yaml found, using defaults")
+		log.Info("No config file found, using defaults", "tried_path", configPath)
 	}
 
 	// Environment variables override config file

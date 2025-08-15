@@ -1,6 +1,6 @@
 # Michishirube Makefile
 
-.PHONY: build run test lint clean docker-build docker-up fixtures-update fixtures-validate generate
+.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up fixtures-update fixtures-validate generate dev-test
 
 # Build the application
 build:
@@ -18,14 +18,57 @@ generate:
 	go generate ./...
 	@echo "Code generation completed"
 
-# Run tests (generates code first)
-test: generate
-	go test ./...
+# Run complete test suite
+test: generate fixtures-validate
+	@echo "Running complete test suite..."
+	@echo "================================"
+	@echo "1. Unit Tests"
+	@echo "================================"
+	go test ./internal/models/ ./internal/config/ ./internal/logger/ -v
+	@echo ""
+	@echo "================================"
+	@echo "2. Storage Tests (with fixtures)"
+	@echo "================================"
+	go test ./internal/storage/sqlite/ -v
+	@echo ""
+	@echo "================================"
+	@echo "3. Handler Tests (with mocks)"
+	@echo "================================"
+	go test ./internal/handlers/ -v
+	@echo ""
+	@echo "================================"
+	@echo "4. Integration Tests"
+	@echo "================================"
+	go test ./internal/ -v -run="TestIntegration"
+	@echo ""
+	@echo "================================"
+	@echo "5. All Tests Summary"
+	@echo "================================"
+	go test ./... -v
+	@echo ""
+	@echo "✅ Complete test suite finished successfully!"
 
 # Run tests with coverage
-test-coverage:
+test-coverage: generate
+	@echo "Running tests with coverage analysis..."
 	go test -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+# Run only unit tests (fast)
+test-unit: generate
+	@echo "Running unit tests only..."
+	go test ./internal/models/ ./internal/config/ ./internal/logger/ ./internal/handlers/ -v
+
+# Run only integration tests
+test-integration: generate fixtures-validate
+	@echo "Running integration tests only..."
+	go test ./internal/ -v -run="TestIntegration"
+
+# Run performance benchmarks
+test-bench: generate
+	@echo "Running performance benchmarks..."
+	go test ./... -bench=. -run="^$$" -benchmem
 
 # Run linting (requires golangci-lint)
 lint:
@@ -71,3 +114,16 @@ test-search:
 # Development helper: run tests with fixtures update
 dev-test:
 	make fixtures-update && make test
+
+# Show test help
+test-help:
+	@echo "Available test targets:"
+	@echo "  make test              - Run complete test suite (recommended)"
+	@echo "  make test-unit         - Run only unit tests (fast)"
+	@echo "  make test-integration  - Run only integration tests"
+	@echo "  make test-coverage     - Run tests with coverage report"
+	@echo "  make test-bench        - Run performance benchmarks"
+	@echo "  make fixtures-validate - Validate fixture data for issues"
+	@echo "  make fixtures-update   - Update fixtures with current data"
+	@echo "  make generate          - Generate mocks and code"
+	@echo "  make dev-test          - Update fixtures then run full suite"

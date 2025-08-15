@@ -67,6 +67,30 @@ The release process uses GoReleaser to create multiarch binaries for:
 - **macOS**: Intel (amd64) and Apple Silicon (arm64) with CGO SQLite driver
 - **Linux**: Intel (amd64) and ARM64 (arm64) with pure Go SQLite driver
 
+### CI/CD Pipeline
+
+The project uses GitHub Actions for automated testing and releases:
+
+- **Continuous Integration**: Runs on every push and pull request
+  - Tests across all packages with coverage reporting
+  - Security scanning with Trivy and Gosec
+  - Linting with golangci-lint
+  - Binary build and smoke testing
+  - GoReleaser configuration validation
+
+- **Snapshot Builds**: Created on every push to main branch
+  - Multiarch binaries available as artifacts
+  - Useful for testing latest changes
+
+- **Release Automation**: Triggered by version tags (e.g., `v1.0.0`)
+  - Automatic GitHub releases with changelog
+  - Multiarch binary distribution
+  - Checksums and signatures for security
+
+- **Dependency Management**: Automated updates via Dependabot
+  - Weekly Go module updates
+  - GitHub Actions version updates
+
 ## Usage
 
 ### Web Interface
@@ -157,6 +181,7 @@ michishirube/
 - **API Documentation**: Swagger/OpenAPI 3.0 with Swaggo
 - **Testing**: Comprehensive test suite with fixtures
 - **Release Management**: GoReleaser for multiarch binary distribution
+- **CI/CD**: GitHub Actions with automated testing, security scanning, and releases
 
 ## Contributing
 

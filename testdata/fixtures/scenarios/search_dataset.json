@@ -1,0 +1,69 @@
+{
+  "name": "Search Test Dataset",
+  "description": "Optimized dataset for testing search functionality across different fields",
+  "tasks": [
+    {
+      "id": "search-001",
+      "jira_id": "SEARCH-001", 
+      "title": "Implement full-text search functionality",
+      "priority": "high",
+      "status": "in_progress",
+      "tags": ["search", "elasticsearch", "backend"],
+      "blockers": []
+    },
+    {
+      "id": "search-002",
+      "jira_id": "SEARCH-002",
+      "title": "Add search filters and sorting",
+      "priority": "normal", 
+      "status": "new",
+      "tags": ["search", "frontend", "ui"],
+      "blockers": []
+    },
+    {
+      "id": "search-003",
+      "jira_id": "BUG-123",
+      "title": "Fix memory leak in search indexing",
+      "priority": "critical",
+      "status": "blocked", 
+      "tags": ["bug", "memory", "search"],
+      "blockers": ["Need database maintenance window"]
+    },
+    {
+      "id": "task-004",
+      "jira_id": "NO-JIRA",
+      "title": "Study advanced algorithms",
+      "priority": "minor",
+      "status": "done",
+      "tags": ["study", "algorithms"],
+      "blockers": []
+    }
+  ],
+  "search_test_cases": [
+    {
+      "query": "search",
+      "expected_matches": ["search-001", "search-002", "search-003"],
+      "description": "Should find tasks with 'search' in title or tags"
+    },
+    {
+      "query": "SEARCH-001", 
+      "expected_matches": ["search-001"],
+      "description": "Should find exact JIRA ID match"
+    },
+    {
+      "query": "memory",
+      "expected_matches": ["search-003"],
+      "description": "Should find tasks with 'memory' in title or tags"
+    },
+    {
+      "query": "elasticsearch",
+      "expected_matches": ["search-001"],
+      "description": "Should find tasks by tag match"
+    },
+    {
+      "query": "nonexistent",
+      "expected_matches": [],
+      "description": "Should return no matches for non-existent terms"
+    }
+  ]
+}

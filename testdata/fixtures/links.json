@@ -1,0 +1,47 @@
+[
+  {
+    "id": "link-550e8400-e29b-41d4-a716-446655440000",
+    "task_id": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "pull_request",
+    "url": "https://github.com/openshift/kubernetes/pull/1234",
+    "title": "Fix memory leak in pod controller",
+    "status": "draft",
+    "metadata": "{\"pr_number\": 1234, \"author\": \"developer123\", \"reviewers\": [\"@team-lead\", \"@senior-dev\"]}"
+  },
+  {
+    "id": "link-550e8400-e29b-41d4-a716-446655440001",
+    "task_id": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "slack_thread",
+    "url": "https://redhat.slack.com/archives/C1234567890/p1642251600000000",
+    "title": "Discussion about memory leak investigation",
+    "status": "active",
+    "metadata": "{\"channel\": \"#k8s-dev\", \"participants\": 5}"
+  },
+  {
+    "id": "link-550e8400-e29b-41d4-a716-446655440002",
+    "task_id": "550e8400-e29b-41d4-a716-446655440000",
+    "type": "jira_ticket",
+    "url": "https://issues.redhat.com/browse/OCPBUGS-1234",
+    "title": "OCPBUGS-1234: Fix memory leak in pod controller",
+    "status": "In Progress",
+    "metadata": "{\"priority\": \"High\", \"assignee\": \"developer123\"}"
+  },
+  {
+    "id": "link-550e8400-e29b-41d4-a716-446655440003",
+    "task_id": "550e8400-e29b-41d4-a716-446655440001",
+    "type": "documentation",
+    "url": "https://docs.openshift.com/dark-mode-design",
+    "title": "Dark Mode Design Guidelines",
+    "status": "published",
+    "metadata": "{\"version\": \"1.0\", \"last_updated\": \"2024-01-16\"}"
+  },
+  {
+    "id": "link-550e8400-e29b-41d4-a716-446655440004",
+    "task_id": "550e8400-e29b-41d4-a716-446655440001",
+    "type": "pull_request",
+    "url": "https://github.com/openshift/console/pull/5678",
+    "title": "Add dark mode CSS variables",
+    "status": "open",
+    "metadata": "{\"pr_number\": 5678, \"author\": \"ui-developer\"}"
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "comment-550e8400-e29b-41d4-a716-446655440000",
+    "task_id": "550e8400-e29b-41d4-a716-446655440000",
+    "content": "Initial investigation shows the leak occurs in the controller reconcile loop when processing large numbers of pods. Memory usage grows linearly with pod count.",
+    "created_at": "2024-01-15T11:00:00Z"
+  },
+  {
+    "id": "comment-550e8400-e29b-41d4-a716-446655440001", 
+    "task_id": "550e8400-e29b-41d4-a716-446655440000",
+    "content": "Found the root cause! The issue is in the cache implementation - we're not properly releasing references to deleted pods. Working on a fix.",
+    "created_at": "2024-01-15T14:15:00Z"
+  },
+  {
+    "id": "comment-550e8400-e29b-41d4-a716-446655440002",
+    "task_id": "550e8400-e29b-41d4-a716-446655440000", 
+    "content": "PR is ready for review. Added proper cleanup in the finalizer and improved cache eviction logic. Need performance validation before merging.",
+    "created_at": "2024-01-15T16:45:00Z"
+  },
+  {
+    "id": "comment-550e8400-e29b-41d4-a716-446655440003",
+    "task_id": "550e8400-e29b-41d4-a716-446655440001",
+    "content": "Started working on dark mode implementation. Using CSS custom properties approach for easy theme switching. Need to coordinate with design team on color palette.",
+    "created_at": "2024-01-16T10:30:00Z"
+  },
+  {
+    "id": "comment-550e8400-e29b-41d4-a716-446655440004",
+    "task_id": "550e8400-e29b-41d4-a716-446655440001",
+    "content": "Dark mode toggle implemented and working in dev environment. Need to validate across different browsers and add user preference persistence.",
+    "created_at": "2024-01-16T15:20:00Z"
+  },
+  {
+    "id": "comment-550e8400-e29b-41d4-a716-446655440005",
+    "task_id": "550e8400-e29b-41d4-a716-446655440003",
+    "content": "Flaky validation seems to be related to timing issues in the integration suite. Need to investigate isolation and add proper wait conditions.",
+    "created_at": "2024-01-17T14:10:00Z"
+  }
+]

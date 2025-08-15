@@ -1,0 +1,57 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "jira_id": "OCPBUGS-1234",
+    "title": "Fix memory leak in pod controller",
+    "priority": "high",
+    "status": "blocked",
+    "tags": ["k8s", "memory", "controller"],
+    "blockers": ["Waiting for review from @team-lead", "Need performance validation results"],
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T14:20:00Z"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "jira_id": "FEAT-5678",
+    "title": "Implement dark mode for web UI",
+    "priority": "normal",
+    "status": "in_progress",
+    "tags": ["frontend", "ui", "feature"],
+    "blockers": [],
+    "created_at": "2024-01-16T09:15:00Z",
+    "updated_at": "2024-01-16T11:45:00Z"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "jira_id": "NO-JIRA",
+    "title": "Update team documentation",
+    "priority": "minor",
+    "status": "done",
+    "tags": ["docs", "team"],
+    "blockers": [],
+    "created_at": "2024-01-14T08:00:00Z",
+    "updated_at": "2024-01-15T16:30:00Z"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440003",
+    "jira_id": "OCPBUGS-9999",
+    "title": "Investigate flaky CI validation",
+    "priority": "critical",
+    "status": "new",
+    "tags": ["ci", "validation", "flaky", "urgent"],
+    "blockers": [],
+    "created_at": "2024-01-17T13:22:00Z",
+    "updated_at": "2024-01-17T13:22:00Z"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440004",
+    "jira_id": "FEAT-1111",
+    "title": "Add metrics dashboard",
+    "priority": "normal",
+    "status": "archived",
+    "tags": ["metrics", "dashboard", "monitoring"],
+    "blockers": [],
+    "created_at": "2023-12-01T10:00:00Z",
+    "updated_at": "2024-01-10T15:00:00Z"
+  }
+]

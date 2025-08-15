@@ -1,0 +1,69 @@
+{
+  "name": "Basic Task Workflow",
+  "description": "Validates a complete task lifecycle from creation to completion",
+  "task": {
+    "id": "workflow-task-001",
+    "jira_id": "WORKFLOW-001",
+    "title": "Implement user authentication",
+    "priority": "high",
+    "status": "new",
+    "tags": ["auth", "security", "backend"],
+    "blockers": [],
+    "created_at": "2024-01-20T09:00:00Z",
+    "updated_at": "2024-01-20T09:00:00Z"
+  },
+  "workflow_steps": [
+    {
+      "step": "start_work",
+      "expected_status": "in_progress",
+      "expected_blockers": []
+    },
+    {
+      "step": "encounter_blocker", 
+      "expected_status": "blocked",
+      "expected_blockers": ["Waiting for security review"]
+    },
+    {
+      "step": "resolve_blocker",
+      "expected_status": "in_progress", 
+      "expected_blockers": []
+    },
+    {
+      "step": "complete_work",
+      "expected_status": "done",
+      "expected_blockers": []
+    }
+  ],
+  "links": [
+    {
+      "id": "workflow-link-001",
+      "task_id": "workflow-task-001",
+      "type": "pull_request",
+      "url": "https://github.com/company/app/pull/123",
+      "title": "Add JWT authentication middleware",
+      "status": "open"
+    },
+    {
+      "id": "workflow-link-002", 
+      "task_id": "workflow-task-001",
+      "type": "documentation",
+      "url": "https://docs.company.com/auth-design",
+      "title": "Authentication Design Document",
+      "status": "draft"
+    }
+  ],
+  "comments": [
+    {
+      "id": "workflow-comment-001",
+      "task_id": "workflow-task-001", 
+      "content": "Started implementation using JWT tokens. Need to review security best practices.",
+      "created_at": "2024-01-20T10:15:00Z"
+    },
+    {
+      "id": "workflow-comment-002",
+      "task_id": "workflow-task-001",
+      "content": "Security team provided feedback. Need to implement token rotation and proper expiration handling.",
+      "created_at": "2024-01-20T14:30:00Z"
+    }
+  ]
+}

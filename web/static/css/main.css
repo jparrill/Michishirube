@@ -138,6 +138,7 @@ h4 { font-size: var(--font-size-lg); }
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: var(--spacing-md);
 }
 
 .logo-section {
@@ -175,8 +176,90 @@ h4 { font-size: var(--font-size-lg); }
     font-weight: 500;
 }
 
+.header-search-area {
+    display: flex;
+    flex: 1;
+    justify-content: flex-end;
+    margin-right: var(--spacing-md);
+}
+
+.header-search-form {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.search-controls {
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-xs);
+}
+
+.header-search-input {
+    border: none;
+    background: transparent;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    outline: none;
+    width: 250px;
+}
+
+.header-search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.header-search-btn {
+    background: none;
+    border: none;
+    padding: var(--spacing-xs);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
+}
+
+.header-search-btn:hover {
+    color: var(--primary-color);
+}
+
+.header-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.header-checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.header-checkmark {
+    font-size: var(--font-size-sm);
+    transition: color 0.2s ease;
+}
+
+.header-checkbox-label input[type="checkbox"]:checked + .header-checkmark {
+    color: var(--primary-color);
+}
+
+.header-checkbox-label input[type="checkbox"]:checked + .header-checkmark::before {
+    content: "☑";
+}
+
+.header-checkbox-label:hover .header-checkmark {
+    color: var(--primary-color);
+}
+
 .header-actions {
     display: flex;
+    justify-content: flex-end;
     gap: var(--spacing-sm);
 }
 
@@ -309,12 +392,12 @@ input::placeholder, textarea::placeholder {
 }
 
 /* Search Section */
-.search-section {
+.filters-section {
     background: var(--bg-primary);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
     box-shadow: var(--shadow-sm);
 }
 
@@ -422,6 +505,35 @@ input::placeholder, textarea::placeholder {
 .priority-filter select {
     width: auto;
     min-width: 120px;
+}
+
+/* Report Section */
+.report-section {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.report-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+}
+
+.report-description {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    margin: 0;
 }
 
 /* Task Cards */

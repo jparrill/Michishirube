@@ -49,6 +49,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/tasks/", taskHandler.HandleTask)
 	mux.HandleFunc("/api/links", taskHandler.HandleLinks)
 	mux.HandleFunc("/api/links/", taskHandler.HandleLink)
+	mux.HandleFunc("/api/report", taskHandler.HandleReport)
 
 	// Static files
 	mux.Handle("/static/", webHandler.StaticFileHandler())

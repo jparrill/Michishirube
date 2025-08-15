@@ -154,10 +154,9 @@ async function updateTaskStatus(selectElement) {
         });
 
         selectElement.defaultValue = newStatus;
-        App.notify.success('Status updated successfully');
         
-        // Optionally refresh the page or update UI
-        setTimeout(() => window.location.reload(), 1000);
+        // Refresh the page to update UI
+        window.location.reload();
         
     } catch (error) {
         console.error('Failed to update status:', error);
@@ -182,7 +181,6 @@ async function updateTaskField(selectElement, field) {
         });
 
         selectElement.defaultValue = newValue;
-        App.notify.success(`${field.charAt(0).toUpperCase() + field.slice(1)} updated successfully`);
         
     } catch (error) {
         console.error(`Failed to update ${field}:`, error);
@@ -240,6 +238,213 @@ function initializeKeyboardShortcuts() {
                 break;
         }
     });
+}
+
+// Report functionality
+async function generateReport() {
+    App.loading.show('Generating report...');
+    
+    try {
+        const reportData = await App.api.get('/api/report');
+        
+        let reportText = '## 📊 Weekly Status Report\n\n';
+        
+        // Working on section
+        reportText += '### 🦀 Things I\'ve been working on\n';
+        if (reportData.working_on && reportData.working_on.length > 0) {
+            reportData.working_on.forEach(task => {
+                const jiraId = task.jira_id !== 'NO-JIRA' ? `[${task.jira_id}] ` : '';
+                reportText += `- ${jiraId}${task.title}\n`;
+                
+                // Add links if they exist, grouped by type
+                if (task.links && task.links.length > 0) {
+                    const linkGroups = {};
+                    
+                    // Group links by type
+                    task.links.forEach(link => {
+                        if (!linkGroups[link.type]) {
+                            linkGroups[link.type] = [];
+                        }
+                        linkGroups[link.type].push(link);
+                    });
+                    
+                    // Format each group
+                    Object.keys(linkGroups).forEach(type => {
+                        const links = linkGroups[type];
+                        let prefix = '';
+                        let formattedLinks = [];
+                        
+                        if (type === 'pull_request') {
+                            prefix = 'PRs: ';
+                            formattedLinks = links.map(link => {
+                                const urlPath = link.url.split('/').pop();
+                                return `[${urlPath}](${link.url})`;
+                            });
+                        } else if (type === 'slack_thread') {
+                            prefix = 'Slack: ';
+                            formattedLinks = links.map((link, index) => {
+                                return `[thread-${index + 1}](${link.url})`;
+                            });
+                        } else if (type === 'jira_ticket') {
+                            prefix = 'Jira related: ';
+                            formattedLinks = links.map(link => {
+                                const urlPath = link.url.split('/').pop();
+                                return `[${urlPath}](${link.url})`;
+                            });
+                        } else {
+                            prefix = `${type}: `;
+                            formattedLinks = links.map(link => {
+                                // For others, use the URL filename without extension as link text
+                                const urlPath = link.url.split('/').pop();
+                                const linkText = urlPath.includes('.') ? urlPath.split('.')[0] : urlPath;
+                                return `[${linkText}](${link.url})`;
+                            });
+                        }
+                        
+                        reportText += `  - ${prefix}${formattedLinks.join(', ')}\n`;
+                    });
+                }
+            });
+        } else {
+            reportText += '- No current work items\n';
+        }
+        
+        // Next up section
+        reportText += '\n### 🖖 Things I plan on working on next\n';
+        if (reportData.next_up && reportData.next_up.length > 0) {
+            reportData.next_up.forEach(task => {
+                const jiraId = task.jira_id !== 'NO-JIRA' ? `[${task.jira_id}] ` : '';
+                reportText += `- ${jiraId}${task.title}\n`;
+                
+                // Add links if they exist, grouped by type
+                if (task.links && task.links.length > 0) {
+                    const linkGroups = {};
+                    
+                    // Group links by type
+                    task.links.forEach(link => {
+                        if (!linkGroups[link.type]) {
+                            linkGroups[link.type] = [];
+                        }
+                        linkGroups[link.type].push(link);
+                    });
+                    
+                    // Format each group
+                    Object.keys(linkGroups).forEach(type => {
+                        const links = linkGroups[type];
+                        let prefix = '';
+                        let formattedLinks = [];
+                        
+                        if (type === 'pull_request') {
+                            prefix = 'PRs: ';
+                            formattedLinks = links.map(link => {
+                                const urlPath = link.url.split('/').pop();
+                                return `[${urlPath}](${link.url})`;
+                            });
+                        } else if (type === 'slack_thread') {
+                            prefix = 'Slack: ';
+                            formattedLinks = links.map((link, index) => {
+                                return `[thread-${index + 1}](${link.url})`;
+                            });
+                        } else if (type === 'jira_ticket') {
+                            prefix = 'Jira related: ';
+                            formattedLinks = links.map(link => {
+                                const urlPath = link.url.split('/').pop();
+                                return `[${urlPath}](${link.url})`;
+                            });
+                        } else {
+                            prefix = `${type}: `;
+                            formattedLinks = links.map(link => {
+                                // For others, use the URL filename without extension as link text
+                                const urlPath = link.url.split('/').pop();
+                                const linkText = urlPath.includes('.') ? urlPath.split('.')[0] : urlPath;
+                                return `[${linkText}](${link.url})`;
+                            });
+                        }
+                        
+                        reportText += `  - ${prefix}${formattedLinks.join(', ')}\n`;
+                    });
+                }
+            });
+        } else {
+            reportText += '- No high priority items planned\n';
+        }
+        
+        // Blockers section
+        reportText += '\n### 🤦 Things that are blocking me\n';
+        if (reportData.blockers && reportData.blockers.length > 0) {
+            reportData.blockers.forEach(task => {
+                const jiraId = task.jira_id !== 'NO-JIRA' ? `[${task.jira_id}] ` : '';
+                reportText += `- ${jiraId}${task.title}\n`;
+                
+                // Add blockers if they exist
+                if (task.blockers && task.blockers.length > 0) {
+                    task.blockers.forEach(blocker => {
+                        reportText += `  - ⚠️ ${blocker}\n`;
+                    });
+                }
+                
+                // Add links if they exist, grouped by type
+                if (task.links && task.links.length > 0) {
+                    const linkGroups = {};
+                    
+                    // Group links by type
+                    task.links.forEach(link => {
+                        if (!linkGroups[link.type]) {
+                            linkGroups[link.type] = [];
+                        }
+                        linkGroups[link.type].push(link);
+                    });
+                    
+                    // Format each group
+                    Object.keys(linkGroups).forEach(type => {
+                        const links = linkGroups[type];
+                        let prefix = '';
+                        let formattedLinks = [];
+                        
+                        if (type === 'pull_request') {
+                            prefix = 'PRs: ';
+                            formattedLinks = links.map(link => {
+                                const urlPath = link.url.split('/').pop();
+                                return `[${urlPath}](${link.url})`;
+                            });
+                        } else if (type === 'slack_thread') {
+                            prefix = 'Slack: ';
+                            formattedLinks = links.map((link, index) => {
+                                return `[thread-${index + 1}](${link.url})`;
+                            });
+                        } else if (type === 'jira_ticket') {
+                            prefix = 'Jira related: ';
+                            formattedLinks = links.map(link => {
+                                const urlPath = link.url.split('/').pop();
+                                return `[${urlPath}](${link.url})`;
+                            });
+                        } else {
+                            prefix = `${type}: `;
+                            formattedLinks = links.map(link => {
+                                // For others, use the URL filename without extension as link text
+                                const urlPath = link.url.split('/').pop();
+                                const linkText = urlPath.includes('.') ? urlPath.split('.')[0] : urlPath;
+                                return `[${linkText}](${link.url})`;
+                            });
+                        }
+                        
+                        reportText += `  - ${prefix}${formattedLinks.join(', ')}\n`;
+                    });
+                }
+            });
+        } else {
+            reportText += '- No current blockers\n';
+        }
+        
+        // Copy to clipboard
+        await navigator.clipboard.writeText(reportText);
+        
+    } catch (error) {
+        console.error('Failed to generate report:', error);
+        App.notify.error('Failed to generate report');
+    } finally {
+        App.loading.hide();
+    }
 }
 
 // Initialize app when DOM is loaded

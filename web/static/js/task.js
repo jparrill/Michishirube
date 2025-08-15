@@ -32,7 +32,6 @@ async function addTag(taskId) {
         // Update UI
         addTagToDOM(tag, taskId);
         input.value = '';
-        App.notify.success('Tag added successfully');
         
     } catch (error) {
         console.error('Failed to add tag:', error);
@@ -58,7 +57,6 @@ async function removeTag(taskId, tag) {
 
         // Update UI
         removeTagFromDOM(tag);
-        App.notify.success('Tag removed successfully');
         
     } catch (error) {
         console.error('Failed to remove tag:', error);
@@ -124,7 +122,6 @@ async function addBlocker(taskId) {
         // Update UI
         addBlockerToDOM(blocker, taskId, updatedBlockers.length - 1);
         input.value = '';
-        App.notify.success('Blocker added successfully');
         
     } catch (error) {
         console.error('Failed to add blocker:', error);
@@ -221,10 +218,9 @@ async function addLink(event, taskId) {
         await App.api.post('/api/links', linkData);
         
         hideAddLinkForm();
-        App.notify.success('Link added successfully');
         
         // Refresh page to show new link
-        setTimeout(() => window.location.reload(), 1000);
+        window.location.reload();
         
     } catch (error) {
         console.error('Failed to add link:', error);
@@ -244,10 +240,8 @@ async function removeLink(linkId) {
     try {
         await App.api.delete(`/api/links/${linkId}`);
         
-        App.notify.success('Link removed successfully');
-        
         // Refresh page to update UI
-        setTimeout(() => window.location.reload(), 1000);
+        window.location.reload();
         
     } catch (error) {
         console.error('Failed to remove link:', error);
@@ -279,10 +273,9 @@ async function addComment(event, taskId) {
         });
         
         form.reset();
-        App.notify.success('Comment added successfully');
         
         // Refresh page to show new comment
-        setTimeout(() => window.location.reload(), 1000);
+        window.location.reload();
         
     } catch (error) {
         console.error('Failed to add comment:', error);
@@ -302,10 +295,8 @@ async function removeComment(commentId) {
     try {
         await App.api.delete(`/api/comments/${commentId}`);
         
-        App.notify.success('Comment removed successfully');
-        
         // Refresh page to update UI
-        setTimeout(() => window.location.reload(), 1000);
+        window.location.reload();
         
     } catch (error) {
         console.error('Failed to remove comment:', error);
@@ -331,10 +322,8 @@ async function deleteTask(taskId) {
     try {
         await App.api.delete(`/api/tasks/${taskId}`);
         
-        App.notify.success('Task deleted successfully');
-        
         // Redirect to dashboard
-        setTimeout(() => window.location.href = '/', 1000);
+        window.location.href = '/';
         
     } catch (error) {
         console.error('Failed to delete task:', error);

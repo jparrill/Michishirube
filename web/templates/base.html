@@ -19,7 +19,25 @@
                             Michishirube
                         </a>
                     </h1>
-                    <span class="tagline">Personal Task Management</span>
+                </div>
+                <div class="header-search-area">
+                    <form class="header-search-form" method="GET" action="/">
+                        <div class="search-controls">
+                            <input 
+                                type="text" 
+                                name="search" 
+                                placeholder="Search tasks..." 
+                                value="{{.SearchQuery}}"
+                                class="header-search-input"
+                            >
+                            <button type="submit" class="header-search-btn">🔍</button>
+                        </div>
+                        <label class="header-checkbox-label">
+                            <input type="checkbox" name="include_archived" {{if .IncludeArchived}}checked{{end}} onchange="this.form.submit()">
+                            <span class="header-checkmark">☐</span>
+                            Include archived
+                        </label>
+                    </form>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="window.location.href='/new'">

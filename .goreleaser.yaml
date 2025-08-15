@@ -170,7 +170,13 @@ release:
     - API Documentation: http://localhost:8080/docs
     - OpenAPI Spec: http://localhost:8080/openapi.yaml
     
+    ---
+    
+    **Built by**: Juan Manuel Parrilla Madrid (@jparrill)  
+    **Repository**: https://github.com/jparrill/Michishirube  
     **Full Changelog**: https://github.com/jparrill/michishirube/compare/{{ .PreviousTag }}...{{ .Tag }}
+    
+    🤖 Generated with [Claude Code](https://claude.ai/code)
 
 # Future Docker and Homebrew configurations can be added here
 

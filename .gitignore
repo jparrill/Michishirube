@@ -24,7 +24,8 @@ go.work.sum
 # env file
 .env
 
-# Application binary
+# Build artifacts
+build/
 michishirube
 bin/
 
@@ -44,4 +45,3 @@ Thumbs.db
 
 # Generated files
 **/mocks/
-coverage.html

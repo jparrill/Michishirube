@@ -4,7 +4,8 @@
 
 # Build the application
 build:
-	go build -o michishirube ./cmd/server
+	@mkdir -p build
+	go build -o build/michishirube ./cmd/server
 
 # Run in development mode
 run:
@@ -51,9 +52,10 @@ test: generate fixtures-validate
 # Run tests with coverage
 test-coverage: generate
 	@echo "Running tests with coverage analysis..."
-	go test -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report generated: coverage.html"
+	@mkdir -p build
+	go test -coverprofile=build/coverage.out ./...
+	go tool cover -html=build/coverage.out -o build/coverage.html
+	@echo "Coverage report generated: build/coverage.html"
 
 # Run only unit tests (fast)
 test-unit: generate
@@ -76,9 +78,10 @@ lint:
 
 # Clean build artifacts
 clean:
-	rm -f michishirube
+	rm -rf build/
 	rm -f *.db
-	rm -f coverage.out coverage.html
+	rm -f config.yaml
+	rm -f michishirube
 
 # Docker build
 docker-build:

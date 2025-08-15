@@ -21,6 +21,43 @@
                     </h1>
                 </div>
                 <div class="header-search-area">
+                    <div class="header-dropdowns">
+                        <div class="header-filters-dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" onclick="toggleFiltersDropdown()">
+                                🔍 Filters
+                            </button>
+                            <div class="dropdown-menu" id="filters-dropdown">
+                                <a href="?status=" class="dropdown-item {{if not .StatusFilter}}active{{end}}">
+                                    📋 All tasks
+                                </a>
+                                <a href="?status=new" class="dropdown-item {{if eq .StatusFilter "new"}}active{{end}}">
+                                    📝 New
+                                </a>
+                                <a href="?status=in_progress" class="dropdown-item {{if eq .StatusFilter "in_progress"}}active{{end}}">
+                                    🔄 In Progress
+                                </a>
+                                <a href="?status=blocked" class="dropdown-item {{if eq .StatusFilter "blocked"}}active{{end}}">
+                                    🚫 Blocked
+                                </a>
+                                <a href="?status=done" class="dropdown-item {{if eq .StatusFilter "done"}}active{{end}}">
+                                    ✅ Done
+                                </a>
+                                <a href="?status=archived&include_archived=true" class="dropdown-item {{if eq .StatusFilter "archived"}}active{{end}}">
+                                    📦 Archived
+                                </a>
+                            </div>
+                        </div>
+                        <div class="header-report-dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" onclick="toggleReportDropdown()">
+                                📊 Report
+                            </button>
+                            <div class="dropdown-menu" id="report-dropdown">
+                                <button class="dropdown-item" onclick="generateReport()">
+                                    📋 Copy Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     <form class="header-search-form" method="GET" action="/">
                         <div class="search-controls">
                             <input 
@@ -33,8 +70,8 @@
                             <button type="submit" class="header-search-btn">🔍</button>
                         </div>
                         <label class="header-checkbox-label">
-                            <input type="checkbox" name="include_archived" {{if .IncludeArchived}}checked{{end}} onchange="this.form.submit()">
-                            <span class="header-checkmark">☐</span>
+                            <input type="checkbox" name="include_archived" value="true" {{if .IncludeArchived}}checked{{end}} onchange="this.form.submit()">
+                            <span class="header-checkmark">{{if .IncludeArchived}}☑{{else}}☐{{end}}</span>
                             Include archived
                         </label>
                     </form>

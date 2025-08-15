@@ -447,6 +447,41 @@ async function generateReport() {
     }
 }
 
+// Dropdown functionality
+function toggleReportDropdown() {
+    const reportDropdown = document.getElementById('report-dropdown');
+    const filtersDropdown = document.getElementById('filters-dropdown');
+    
+    // Close filters dropdown if open
+    filtersDropdown.classList.remove('show');
+    
+    // Toggle report dropdown
+    reportDropdown.classList.toggle('show');
+}
+
+function toggleFiltersDropdown() {
+    const reportDropdown = document.getElementById('report-dropdown');
+    const filtersDropdown = document.getElementById('filters-dropdown');
+    
+    // Close report dropdown if open
+    reportDropdown.classList.remove('show');
+    
+    // Toggle filters dropdown
+    filtersDropdown.classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (event) => {
+    const reportDropdown = document.getElementById('report-dropdown');
+    const filtersDropdown = document.getElementById('filters-dropdown');
+    const button = event.target.closest('.dropdown-toggle');
+    
+    if (!button) {
+        if (reportDropdown) reportDropdown.classList.remove('show');
+        if (filtersDropdown) filtersDropdown.classList.remove('show');
+    }
+});
+
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     initializeSearch();

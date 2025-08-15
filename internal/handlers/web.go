@@ -26,7 +26,6 @@ type PageData struct {
 	Tasks         []*TaskWithRelations
 	SearchQuery   string
 	StatusFilter  string
-	PriorityFilter string
 	IncludeArchived bool
 	TaskCount     int
 	
@@ -94,14 +93,12 @@ func (h *WebHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
 	log.Debug("Dashboard endpoint called", 
 		"search", r.URL.Query().Get("search"),
-		"status_filter", r.URL.Query().Get("status"),
-		"priority_filter", r.URL.Query().Get("priority"))
+		"status_filter", r.URL.Query().Get("status"))
 	
 	// Parse query parameters
 	query := r.URL.Query()
 	searchQuery := query.Get("search")
 	statusFilter := query.Get("status")
-	priorityFilter := query.Get("priority")
 	includeArchived := query.Get("include_archived") == "true" || query.Get("include_archived") == "1"
 	
 	limit := 20
@@ -121,10 +118,6 @@ func (h *WebHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 
 	if statusFilter != "" {
 		filters.Status = []models.Status{models.Status(statusFilter)}
-	}
-
-	if priorityFilter != "" {
-		filters.Priority = []models.Priority{models.Priority(priorityFilter)}
 	}
 
 	var tasks []*models.Task
@@ -182,7 +175,6 @@ func (h *WebHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		Tasks:           tasksWithRelations,
 		SearchQuery:     searchQuery,
 		StatusFilter:    statusFilter,
-		PriorityFilter:  priorityFilter,
 		IncludeArchived: includeArchived,
 		TaskCount:       totalCount,
 		Offset:          offset + 1, // 1-based for display

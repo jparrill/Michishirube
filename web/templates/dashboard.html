@@ -1,40 +1,7 @@
 {{define "content"}}
 <div class="dashboard">
 
-    <!-- Filter Tabs -->
-    <div class="filter-tabs">
-        <div class="status-filters">
-            <a href="?status=" class="filter-tab {{if not .StatusFilter}}active{{end}}">All</a>
-            <a href="?status=new" class="filter-tab {{if eq .StatusFilter "new"}}active{{end}}">📝 New</a>
-            <a href="?status=in_progress" class="filter-tab {{if eq .StatusFilter "in_progress"}}active{{end}}">🔄 In Progress</a>
-            <a href="?status=blocked" class="filter-tab {{if eq .StatusFilter "blocked"}}active{{end}}">🚫 Blocked</a>
-            <a href="?status=done" class="filter-tab {{if eq .StatusFilter "done"}}active{{end}}">✅ Done</a>
-            <a href="?status=archived&include_archived=true" class="filter-tab {{if eq .StatusFilter "archived"}}active{{end}}">📦 Archived</a>
-        </div>
-        <div class="priority-filter">
-            <label for="priority-select">Priority:</label>
-            <select name="priority" id="priority-select" onchange="this.form.submit()">
-                <option value="">All</option>
-                <option value="critical" {{if eq .PriorityFilter "critical"}}selected{{end}}>🔴 Critical</option>
-                <option value="high" {{if eq .PriorityFilter "high"}}selected{{end}}>🟡 High</option>
-                <option value="normal" {{if eq .PriorityFilter "normal"}}selected{{end}}>🟢 Normal</option>
-                <option value="minor" {{if eq .PriorityFilter "minor"}}selected{{end}}>⚪ Minor</option>
-            </select>
-        </div>
-    </div>
 
-    <!-- Report Section -->
-    <div class="report-section">
-        <div class="report-header">
-            <h3>📊 Weekly Report</h3>
-            <button class="btn btn-secondary" onclick="generateReport()">
-                📋 Copy Report
-            </button>
-        </div>
-        <p class="report-description">
-            Generates automatic status report based on current tasks
-        </p>
-    </div>
 
     <!-- Tasks List -->
     <div class="tasks-container">

@@ -7,88 +7,144 @@
     <div class="tasks-container">
         {{if .Tasks}}
             {{range .Tasks}}
-            <div class="task-card" data-task-id="{{.ID}}">
-                <div class="task-header">
-                    <div class="task-title">
-                        <a href="/task/{{.ID}}" class="task-link">
-                            <span class="jira-id">{{if ne .JiraID "NO-JIRA"}}[{{.JiraID}}]{{end}}</span>
-                            <span class="title-text">{{.Title}}</span>
-                        </a>
+            <div class="task-row" data-task-id="{{.ID}}">
+                <div class="task-main">
+                    <div class="task-priority">
+                        {{if eq (string .Priority) "critical"}}🔴{{end}}
+                        {{if eq (string .Priority) "high"}}🔺{{end}}
+                        {{if eq (string .Priority) "normal"}}🟰{{end}}
+                        {{if eq (string .Priority) "minor"}}🔽{{end}}
                     </div>
-                    <div class="task-actions">
-                        <div class="status-dropdown">
-                            <select class="status-select" data-task-id="{{.ID}}" onchange="updateTaskStatus(this)">
-                                <option value="new" {{if eq (string .Status) "new"}}selected{{end}}>📝 New</option>
-                                <option value="in_progress" {{if eq (string .Status) "in_progress"}}selected{{end}}>🔄 In Progress</option>
-                                <option value="blocked" {{if eq (string .Status) "blocked"}}selected{{end}}>🚫 Blocked</option>
-                                <option value="done" {{if eq (string .Status) "done"}}selected{{end}}>✅ Done</option>
-                                <option value="archived" {{if eq (string .Status) "archived"}}selected{{end}}>📦 Archived</option>
-                            </select>
+                    <div class="task-content">
+                        <div class="task-title-row">
+                            <div class="task-left-info">
+                                <a href="/task/{{.ID}}" class="task-link">
+                                    <span class="jira-id">[{{.JiraID}}]</span>
+                                    <span class="title-text">{{.Title}}</span>
+                                </a>
+                                {{if .Tags}}
+                                    <div class="task-tags">
+                                        {{range .Tags}}<span class="tag">{{.}}</span>{{end}}
+                                    </div>
+                                {{end}}
+                            </div>
+                            <div class="task-indicators">
+                                {{if .Comments}}
+                                    <a href="/task/{{.ID}}#comments" class="indicator-badge indicator-link">💬 {{len .Comments}}</a>
+                                {{end}}
+                                {{$prLinks := slice}}
+                                {{$slackLinks := slice}}
+                                {{$jiraLinks := slice}}
+                                {{$docsLinks := slice}}
+                                {{$otherLinks := slice}}
+                                {{range .Links}}
+                                    {{if eq (string .Type) "pull_request"}}{{$prLinks = append $prLinks .}}{{end}}
+                                    {{if eq (string .Type) "slack_thread"}}{{$slackLinks = append $slackLinks .}}{{end}}
+                                    {{if eq (string .Type) "jira_ticket"}}{{$jiraLinks = append $jiraLinks .}}{{end}}
+                                    {{if eq (string .Type) "documentation"}}{{$docsLinks = append $docsLinks .}}{{end}}
+                                    {{if eq (string .Type) "other"}}{{$otherLinks = append $otherLinks .}}{{end}}
+                                {{end}}
+                                {{if gt (len $prLinks) 0}}
+                                    {{if eq (len $prLinks) 1}}
+                                        <a href="{{(index $prLinks 0).URL}}" target="_blank" class="indicator-badge indicator-link">🔗 {{len $prLinks}}</a>
+                                    {{else}}
+                                        <div class="indicator-dropdown">
+                                            <span class="indicator-badge indicator-dropdown-toggle" onclick="toggleIndicatorDropdown(this)">🔗 {{len $prLinks}}</span>
+                                            <div class="indicator-dropdown-menu">
+                                                {{range $prLinks}}
+                                                    <a href="{{.URL}}" target="_blank" class="indicator-dropdown-item">{{.Title}}</a>
+                                                {{end}}
+                                            </div>
+                                        </div>
+                                    {{end}}
+                                {{end}}
+                                {{if gt (len $slackLinks) 0}}
+                                    {{if eq (len $slackLinks) 1}}
+                                        <a href="{{(index $slackLinks 0).URL}}" target="_blank" class="indicator-badge indicator-link">🗨️ {{len $slackLinks}}</a>
+                                    {{else}}
+                                        <div class="indicator-dropdown">
+                                            <span class="indicator-badge indicator-dropdown-toggle" onclick="toggleIndicatorDropdown(this)">🗨️ {{len $slackLinks}}</span>
+                                            <div class="indicator-dropdown-menu">
+                                                {{range $slackLinks}}
+                                                    <a href="{{.URL}}" target="_blank" class="indicator-dropdown-item">{{.Title}}</a>
+                                                {{end}}
+                                            </div>
+                                        </div>
+                                    {{end}}
+                                {{end}}
+                                {{if gt (len $jiraLinks) 0}}
+                                    {{if eq (len $jiraLinks) 1}}
+                                        <a href="{{(index $jiraLinks 0).URL}}" target="_blank" class="indicator-badge indicator-link">📋 {{len $jiraLinks}}</a>
+                                    {{else}}
+                                        <div class="indicator-dropdown">
+                                            <span class="indicator-badge indicator-dropdown-toggle" onclick="toggleIndicatorDropdown(this)">📋 {{len $jiraLinks}}</span>
+                                            <div class="indicator-dropdown-menu">
+                                                {{range $jiraLinks}}
+                                                    <a href="{{.URL}}" target="_blank" class="indicator-dropdown-item">{{.Title}}</a>
+                                                {{end}}
+                                            </div>
+                                        </div>
+                                    {{end}}
+                                {{end}}
+                                {{if gt (len $docsLinks) 0}}
+                                    {{if eq (len $docsLinks) 1}}
+                                        <a href="{{(index $docsLinks 0).URL}}" target="_blank" class="indicator-badge indicator-link">📚 {{len $docsLinks}}</a>
+                                    {{else}}
+                                        <div class="indicator-dropdown">
+                                            <span class="indicator-badge indicator-dropdown-toggle" onclick="toggleIndicatorDropdown(this)">📚 {{len $docsLinks}}</span>
+                                            <div class="indicator-dropdown-menu">
+                                                {{range $docsLinks}}
+                                                    <a href="{{.URL}}" target="_blank" class="indicator-dropdown-item">{{.Title}}</a>
+                                                {{end}}
+                                            </div>
+                                        </div>
+                                    {{end}}
+                                {{end}}
+                                {{if gt (len $otherLinks) 0}}
+                                    {{if eq (len $otherLinks) 1}}
+                                        <a href="{{(index $otherLinks 0).URL}}" target="_blank" class="indicator-badge indicator-link">🌐 {{len $otherLinks}}</a>
+                                    {{else}}
+                                        <div class="indicator-dropdown">
+                                            <span class="indicator-badge indicator-dropdown-toggle" onclick="toggleIndicatorDropdown(this)">🌐 {{len $otherLinks}}</span>
+                                            <div class="indicator-dropdown-menu">
+                                                {{range $otherLinks}}
+                                                    <a href="{{.URL}}" target="_blank" class="indicator-dropdown-item">{{.Title}}</a>
+                                                {{end}}
+                                            </div>
+                                        </div>
+                                    {{end}}
+                                {{end}}
+                            </div>
                         </div>
-                    </div>
-                </div>
-
-                <div class="task-meta">
-                    <div class="meta-row">
-                        <span class="priority priority-{{string .Priority}}">
-                            {{if eq (string .Priority) "critical"}}🔴 Critical{{end}}
-                            {{if eq (string .Priority) "high"}}🟡 High{{end}}
-                            {{if eq (string .Priority) "normal"}}🟢 Normal{{end}}
-                            {{if eq (string .Priority) "minor"}}⚪ Minor{{end}}
-                        </span>
-                        <span class="separator">|</span>
-                        <span class="status status-{{string .Status}}">
-                            {{if eq (string .Status) "new"}}📝 New{{end}}
-                            {{if eq (string .Status) "in_progress"}}🔄 In Progress{{end}}
-                            {{if eq (string .Status) "blocked"}}🚫 Blocked{{end}}
-                            {{if eq (string .Status) "done"}}✅ Done{{end}}
-                            {{if eq (string .Status) "archived"}}📦 Archived{{end}}
-                        </span>
-                        {{if .Tags}}
-                        <span class="separator">|</span>
-                        <div class="tags">
-                            📋 {{range $i, $tag := .Tags}}{{if $i}}, {{end}}<span class="tag">{{$tag}}</span>{{end}}
+                        {{if .Blockers}}
+                        <div class="task-info-row">
+                            <div class="task-links-section">
+                                <span class="blockers-badge">⚠️ {{len .Blockers}} blocker{{if ne (len .Blockers) 1}}s{{end}}</span>
+                            </div>
                         </div>
                         {{end}}
-                    </div>
-
-                    {{if .Links}}
-                    <div class="meta-row">
-                        <div class="links-summary">
-                            {{range .Links}}
-                                <span class="link-indicator">
-                                    {{if eq .Type "pull_request"}}🔗 PR{{end}}
-                                    {{if eq .Type "slack_thread"}}💬 Slack{{end}}
-                                    {{if eq .Type "jira_ticket"}}📋 Jira{{end}}
-                                    {{if eq .Type "documentation"}}📚 Docs{{end}}
-                                    {{if eq .Type "other"}}🌐 Link{{end}}
-                                    {{if .Status}}<small>({{.Status}})</small>{{end}}
-                                </span>
-                            {{end}}
-                            {{if .Comments}}
-                            <span class="comments-indicator">💬 {{len .Comments}} comment{{if ne (len .Comments) 1}}s{{end}}</span>
-                            {{end}}
+                        <div class="task-timestamps">
+                            <span class="timestamp">📅 Created: {{.CreatedAt.Format "Jan 2, 2006"}}</span>
+                            <span class="separator">|</span>
+                            <span class="timestamp">📝 Updated: {{.UpdatedAt.Format "Jan 2, 15:04"}}</span>
                         </div>
                     </div>
-                    {{end}}
-
-                    {{if .Blockers}}
-                    <div class="meta-row blockers-row">
-                        <div class="blockers">
-                            <span class="blockers-label">⚠️ Blocked by:</span>
-                            {{range $i, $blocker := .Blockers}}
-                                {{if $i}} • {{end}}<span class="blocker">{{$blocker}}</span>
-                            {{end}}
-                        </div>
-                    </div>
-                    {{end}}
-
-                    <div class="meta-row timestamps">
-                        <span class="timestamp">📅 Created: <time class="relative-time" datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z"}}">{{.CreatedAt.Format "Jan 2, 2006"}}</time></span>
-                        <span class="separator">|</span>
-                        <span class="timestamp">📝 Updated: <time class="relative-time" datetime="{{.UpdatedAt.Format "2006-01-02T15:04:05Z"}}">{{.UpdatedAt.Format "Jan 2, 15:04"}}</time></span>
+                    <div class="task-status">
+                        <select class="status-select" data-task-id="{{.ID}}" onchange="updateTaskStatus(this)">
+                            <option value="new" {{if eq (string .Status) "new"}}selected{{end}}>📝 New</option>
+                            <option value="in_progress" {{if eq (string .Status) "in_progress"}}selected{{end}}>🔄 In Progress</option>
+                            <option value="blocked" {{if eq (string .Status) "blocked"}}selected{{end}}>🚫 Blocked</option>
+                            <option value="done" {{if eq (string .Status) "done"}}selected{{end}}>✅ Done</option>
+                            <option value="archived" {{if eq (string .Status) "archived"}}selected{{end}}>📦 Archived</option>
+                        </select>
                     </div>
                 </div>
+                {{if .Blockers}}
+                <div class="task-blockers">
+                    <span class="blockers-label">⚠️ Blocked by:</span>
+                    {{range $i, $blocker := .Blockers}}{{if $i}} • {{end}}{{$blocker}}{{end}}
+                </div>
+                {{end}}
             </div>
             {{end}}
 

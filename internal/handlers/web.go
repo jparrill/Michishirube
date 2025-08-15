@@ -75,6 +75,18 @@ func NewWebHandler(storage storage.Storage) *WebHandler {
 		"string": func(v interface{}) string {
 			return fmt.Sprintf("%v", v)
 		},
+		"slice": func() []*models.Link {
+			return make([]*models.Link, 0)
+		},
+		"append": func(slice []*models.Link, item *models.Link) []*models.Link {
+			return append(slice, item)
+		},
+		"index": func(slice []*models.Link, index int) *models.Link {
+			if index >= 0 && index < len(slice) {
+				return slice[index]
+			}
+			return nil
+		},
 	})
 	
 	templates, err := tmpl.ParseGlob("web/templates/*.html")
@@ -408,6 +420,18 @@ func (h *WebHandler) renderTemplate(w http.ResponseWriter, templateName string, 
 		},
 		"string": func(v interface{}) string {
 			return fmt.Sprintf("%v", v)
+		},
+		"slice": func() []*models.Link {
+			return make([]*models.Link, 0)
+		},
+		"append": func(slice []*models.Link, item *models.Link) []*models.Link {
+			return append(slice, item)
+		},
+		"index": func(slice []*models.Link, index int) *models.Link {
+			if index >= 0 && index < len(slice) {
+				return slice[index]
+			}
+			return nil
 		},
 	})
 	

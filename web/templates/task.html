@@ -24,9 +24,9 @@
             <div class="meta-item">
                 <label>Priority:</label>
                 <select class="priority-select" data-task-id="{{.Task.ID}}" onchange="updateTaskField(this, 'priority')">
-                    <option value="minor" {{if eq .Task.Priority "minor"}}selected{{end}}>⚪ Minor</option>
-                    <option value="normal" {{if eq .Task.Priority "normal"}}selected{{end}}>🟢 Normal</option>
-                    <option value="high" {{if eq .Task.Priority "high"}}selected{{end}}>🟡 High</option>
+                    <option value="minor" {{if eq .Task.Priority "minor"}}selected{{end}}>🔽 Minor</option>
+                    <option value="normal" {{if eq .Task.Priority "normal"}}selected{{end}}>🟰 Normal</option>
+                    <option value="high" {{if eq .Task.Priority "high"}}selected{{end}}>🔺 High</option>
                     <option value="critical" {{if eq .Task.Priority "critical"}}selected{{end}}>🔴 Critical</option>
                 </select>
             </div>
@@ -156,7 +156,7 @@
     </div>
 
     <!-- Comments Section -->
-    <div class="comments-section">
+    <div id="comments" class="comments-section">
         <h3>💬 Comments</h3>
         <div class="comments-container">
             {{if .Comments}}

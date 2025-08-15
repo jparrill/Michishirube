@@ -470,15 +470,42 @@ function toggleFiltersDropdown() {
     filtersDropdown.classList.toggle('show');
 }
 
+// Indicator dropdown functionality
+function toggleIndicatorDropdown(element) {
+    const dropdown = element.parentElement;
+    const menu = dropdown.querySelector('.indicator-dropdown-menu');
+    
+    // Close all other indicator dropdowns
+    document.querySelectorAll('.indicator-dropdown-menu.show').forEach(otherMenu => {
+        if (otherMenu !== menu) {
+            otherMenu.classList.remove('show');
+        }
+    });
+    
+    // Toggle current dropdown
+    menu.classList.toggle('show');
+    
+    // Prevent event bubbling
+    event.stopPropagation();
+}
+
 // Close dropdown when clicking outside
 document.addEventListener('click', (event) => {
     const reportDropdown = document.getElementById('report-dropdown');
     const filtersDropdown = document.getElementById('filters-dropdown');
     const button = event.target.closest('.dropdown-toggle');
+    const indicatorButton = event.target.closest('.indicator-dropdown-toggle');
     
     if (!button) {
         if (reportDropdown) reportDropdown.classList.remove('show');
         if (filtersDropdown) filtersDropdown.classList.remove('show');
+    }
+    
+    // Close indicator dropdowns when clicking outside
+    if (!indicatorButton && !event.target.closest('.indicator-dropdown-menu')) {
+        document.querySelectorAll('.indicator-dropdown-menu.show').forEach(menu => {
+            menu.classList.remove('show');
+        });
     }
 });
 

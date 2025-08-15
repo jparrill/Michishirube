@@ -9,19 +9,16 @@
         <div class="form-section">
             <div class="form-row">
                 <label for="jira_id">Jira ID:</label>
-                <div class="jira-input-group">
-                    <input 
-                        type="text" 
-                        id="jira_id" 
-                        name="jira_id" 
-                        placeholder="OCPBUGS-1234" 
-                        value="{{.JiraID}}"
-                        pattern="[A-Z]+-[0-9]+"
-                        title="Format: PROJECT-NUMBER (e.g., OCPBUGS-1234)"
-                    >
-                    <button type="button" class="btn btn-small" onclick="setNoJira()">No JIRA</button>
-                </div>
-                <small class="form-hint">Format: PROJECT-NUMBER (e.g., OCPBUGS-1234) or click "No JIRA"</small>
+                <input 
+                    type="text" 
+                    id="jira_id" 
+                    name="jira_id" 
+                    placeholder="OCPBUGS-1234 (optional)" 
+                    value="{{.JiraID}}"
+                    pattern="[A-Z]+-[0-9]*"
+                    title="Format: PROJECT-NUMBER (e.g., OCPBUGS-1234)"
+                >
+                <small class="form-hint">Format: PROJECT-NUMBER (e.g., OCPBUGS-1234) or leave empty for NO-JIRA</small>
             </div>
 
             <div class="form-row">
@@ -41,9 +38,9 @@
             <div class="form-row">
                 <label for="priority">Priority:</label>
                 <select id="priority" name="priority">
-                    <option value="minor" {{if eq .Priority "minor"}}selected{{end}}>⚪ Minor</option>
-                    <option value="normal" {{if eq .Priority "normal"}}selected{{end}} selected>🟢 Normal</option>
-                    <option value="high" {{if eq .Priority "high"}}selected{{end}}>🟡 High</option>
+                    <option value="minor" {{if eq .Priority "minor"}}selected{{end}}>🔽 Minor</option>
+                    <option value="normal" {{if eq .Priority "normal"}}selected{{end}} selected>🟰 Normal</option>
+                    <option value="high" {{if eq .Priority "high"}}selected{{end}}>🔺 High</option>
                     <option value="critical" {{if eq .Priority "critical"}}selected{{end}}>🔴 Critical</option>
                 </select>
             </div>

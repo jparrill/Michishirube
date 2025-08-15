@@ -9,10 +9,13 @@ import (
 	"syscall"
 	"time"
 
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"michishirube/internal/config"
 	"michishirube/internal/handlers"
 	"michishirube/internal/logger"
 	"michishirube/internal/storage"
+	
+	_ "michishirube/docs" // Import generated docs
 )
 
 type Server struct {
@@ -46,7 +49,10 @@ func (s *Server) Start() error {
 	
 	// API Documentation routes
 	mux.HandleFunc("/docs", webHandler.SwaggerUI)
-	mux.HandleFunc("/swagger", webHandler.SwaggerUI)
+	mux.HandleFunc("/api-docs/", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
+	))
+	mux.HandleFunc("/swagger/doc.json", webHandler.SwaggerJSON)
 	mux.HandleFunc("/openapi.yaml", webHandler.OpenAPISpec)
 
 	// API routes (for AJAX calls from frontend)

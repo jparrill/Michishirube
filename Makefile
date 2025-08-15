@@ -1,6 +1,6 @@
 # Michishirube Makefile
 
-.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up fixtures-update fixtures-validate generate docs dev-test release release-check release-snapshot
+.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up docker-multiarch docker-dev docker-down docker-logs docker-help fixtures-update fixtures-validate generate docs dev-test release release-check release-snapshot
 
 # Build the application
 build:
@@ -97,13 +97,57 @@ clean:
 	rm -f config.yaml
 	rm -f michishirube
 
-# Docker build
+# Docker build (single arch)
 docker-build:
-	docker build -t michishirube .
+	@VERSION=$$(git describe --tags --exact-match 2>/dev/null || echo "latest"); \
+	docker build \
+		--build-arg VERSION=$$VERSION \
+		--build-arg COMMIT=$$(git rev-parse --short HEAD 2>/dev/null || echo "unknown") \
+		--build-arg BUILD_DATE=$$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+		--build-arg BUILT_BY=make-local \
+		-t quay.io/jparrill/michishirube:$$VERSION \
+		-t quay.io/jparrill/michishirube:latest \
+		-t michishirube:latest \
+		.
 
-# Run with docker-compose
+# Docker multiarch build with buildx
+docker-multiarch:
+	@echo "Setting up Docker buildx for multiarch builds..."
+	docker buildx create --name michishirube-builder --use || docker buildx use michishirube-builder
+	@echo "Building for multiple architectures..."
+	@VERSION=$$(git describe --tags --exact-match 2>/dev/null || echo "latest"); \
+	docker buildx build \
+		--platform linux/amd64,linux/arm64 \
+		--build-arg VERSION=$$VERSION \
+		--build-arg COMMIT=$$(git rev-parse --short HEAD 2>/dev/null || echo "unknown") \
+		--build-arg BUILD_DATE=$$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+		--build-arg BUILT_BY=make-multiarch \
+		-t quay.io/jparrill/michishirube:$$VERSION \
+		-t quay.io/jparrill/michishirube:latest \
+		--push \
+		.
+
+# Run with docker-compose (production)
 docker-up:
 	docker-compose up --build
+
+# Run with docker-compose (development mode)
+docker-dev:
+	docker-compose --profile dev up --build
+
+# Stop docker-compose services
+docker-down:
+	docker-compose down
+
+# View docker-compose logs
+docker-logs:
+	docker-compose logs -f
+
+# Clean Docker resources
+docker-clean:
+	docker-compose down -v
+	docker system prune -f
+	docker buildx rm michishirube-builder || true
 
 # Update fixtures with current test data
 fixtures-update:
@@ -179,3 +223,29 @@ release-help:
 	@echo "  2. make release-check  - Validate the configuration"
 	@echo "  3. make release-snapshot - Test with a snapshot build"
 	@echo "  4. make release        - Create and publish the release"
+
+# Show Docker help
+docker-help:
+	@echo "Available Docker targets:"
+	@echo "  make docker-build      - Build single architecture Docker image (quay.io/jparrill/michishirube)"
+	@echo "  make docker-multiarch  - Build multiarch image with buildx (amd64, arm64) and push to registry"
+	@echo "  make docker-up         - Run production environment with docker-compose"
+	@echo "  make docker-dev        - Run development environment with hot reload"
+	@echo "  make docker-down       - Stop all docker-compose services"
+	@echo "  make docker-logs       - View logs from all services"
+	@echo "  make docker-clean      - Clean all Docker resources (containers, volumes, buildx)"
+	@echo ""
+	@echo "Environment variables (create .env file):"
+	@echo "  PORT=8080              - Application port"
+	@echo "  LOG_LEVEL=info         - Log level (debug, info, warn, error)"
+	@echo "  DB_PATH=./app.db       - Database file path"
+	@echo "  DEV_PORT=8081          - Development mode port"
+	@echo ""
+	@echo "Docker workflow:"
+	@echo "  1. cp .env.example .env           - Create environment config"
+	@echo "  2. make docker-build              - Build the image locally"
+	@echo "  3. make docker-up                 - Start production services"
+	@echo "  4. make docker-dev                - Start development services"
+	@echo "  5. make docker-multiarch          - Build and push multiarch image to quay.io"
+	@echo ""
+	@echo "Registry: quay.io/jparrill/michishirube:latest (or version tag)"

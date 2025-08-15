@@ -30,16 +30,17 @@ const (
 	DefaultNoJira = "NO-JIRA"
 )
 
+// Task represents a work item in the system
 type Task struct {
-	ID        string    `json:"id" db:"id"`
-	JiraID    string    `json:"jira_id" db:"jira_id"`
-	Title     string    `json:"title" db:"title"`
-	Priority  Priority  `json:"priority" db:"priority"`
-	Status    Status    `json:"status" db:"status"`
-	Tags      []string  `json:"tags" db:"tags"`
-	Blockers  []string  `json:"blockers" db:"blockers"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	ID        string    `json:"id" db:"id" example:"550e8400-e29b-41d4-a716-446655440000"`                                   // Unique identifier
+	JiraID    string    `json:"jira_id" db:"jira_id" example:"OCPBUGS-1234"`                                                 // Jira ticket ID or NO-JIRA
+	Title     string    `json:"title" db:"title" example:"Fix memory leak in pod controller"`                               // Task title
+	Priority  Priority  `json:"priority" db:"priority" example:"high"`                                                      // Task priority
+	Status    Status    `json:"status" db:"status" example:"in_progress"`                                                   // Current status
+	Tags      []string  `json:"tags" db:"tags" example:"k8s,memory"`                                                        // Associated tags
+	Blockers  []string  `json:"blockers" db:"blockers" example:"Waiting for review from @team-lead"`                       // Blocking issues
+	CreatedAt time.Time `json:"created_at" db:"created_at" example:"2024-01-15T10:30:00Z"`                                // Creation timestamp
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at" example:"2024-01-15T14:20:00Z"`                                // Last update timestamp
 }
 
 func (p Priority) IsValid() bool {

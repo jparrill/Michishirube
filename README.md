@@ -21,8 +21,9 @@ Michishirube (Japanese for "signpost") is a personal task management tool design
 
 Download the latest release for your platform from the [releases page](https://github.com/jparrill/michishirube/releases).
 
-### Installation
+### Installation Options
 
+#### Option 1: Binary Installation
 1. Extract the downloaded archive
 2. Run the binary:
    ```bash
@@ -30,8 +31,16 @@ Download the latest release for your platform from the [releases page](https://g
    ```
 3. Open your browser to http://localhost:8080
 
-### Building from Source
+#### Option 2: Docker (Recommended)
+```bash
+# Run with docker-compose (production)
+docker-compose up -d
 
+# Or run directly with Docker
+docker run -d -p 8080:8080 -v michishirube_data:/data quay.io/jparrill/michishirube:latest
+```
+
+#### Option 3: Building from Source
 ```bash
 # Clone the repository
 git clone https://github.com/jparrill/michishirube.git
@@ -90,6 +99,36 @@ The project uses GitHub Actions for automated testing and releases:
 - **Dependency Management**: Automated updates via Dependabot
   - Weekly Go module updates
   - GitHub Actions version updates
+
+### Docker Deployment
+
+The project includes comprehensive Docker support with multiarch builds:
+
+```bash
+# Quick start with docker-compose
+cp .env.example .env  # Configure environment
+docker-compose up -d  # Start production services
+
+# Development mode with hot reload
+docker-compose --profile dev up --build
+
+# Multiarch build for distribution
+make docker-multiarch
+```
+
+**Environment Configuration:**
+Create a `.env` file from `.env.example` to customize:
+- `PORT`: Application port (default: 8080)
+- `LOG_LEVEL`: Logging level (debug, info, warn, error)
+- `DB_PATH`: Database file path (persisted in Docker volume)
+
+**Docker Commands:**
+- `make docker-build`: Single architecture build
+- `make docker-multiarch`: Multi-platform build (amd64, arm64)
+- `make docker-up`: Start production environment
+- `make docker-dev`: Start development environment with hot reload
+- `make docker-down`: Stop all services
+- `make docker-clean`: Clean all Docker resources
 
 ## Usage
 

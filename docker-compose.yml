@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  michishirube:
+    image: quay.io/jparrill/michishirube:latest
+    # Uncomment to build locally instead of using pre-built image
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    #   platforms:
+    #     - linux/amd64
+    #     - linux/arm64
+    container_name: michishirube
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      # Core application settings
+      - PORT=${PORT:-8080}
+      - DB_PATH=/data/michishirube.db
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - CONFIG_PATH=${CONFIG_PATH:-}
+      
+      # Optional build info (will be set during build)
+      - APP_VERSION=${APP_VERSION:-docker}
+      - APP_COMMIT=${APP_COMMIT:-unknown}
+      - APP_BUILD_DATE=${APP_BUILD_DATE:-unknown}
+      - APP_BUILT_BY=${APP_BUILT_BY:-docker-compose}
+    volumes:
+      # Persist database
+      - michishirube_data:/data
+      # Optional: mount custom config
+      - ./config:/app/config:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.michishirube.description=Personal task management application"
+      - "com.michishirube.version=latest"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+
+  # Development service with hot reload (optional)
+  michishirube-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    container_name: michishirube-dev
+    ports:
+      - "${DEV_PORT:-8081}:8080"
+    environment:
+      # Core application settings  
+      - PORT=${DEV_PORT:-8080}
+      - DB_PATH=/data/michishirube-dev.db
+      - LOG_LEVEL=${DEV_LOG_LEVEL:-debug}
+      - CONFIG_PATH=${DEV_CONFIG_PATH:-}
+      
+      # Development-specific settings
+      - CGO_ENABLED=1
+      - APP_VERSION=dev
+      - APP_COMMIT=development
+      - APP_BUILD_DATE=live
+      - APP_BUILT_BY=docker-compose-dev
+    volumes:
+      - .:/app
+      - michishirube_dev_data:/data
+      - go_mod_cache:/go/pkg/mod
+    working_dir: /app
+    command: ["go", "run", "./cmd/server"]
+    profiles:
+      - dev
+    depends_on: []
+
+volumes:
+  michishirube_data:
+    driver: local
+    labels:
+      - "com.michishirube.description=Production database storage"
+  
+  michishirube_dev_data:
+    driver: local
+    labels:
+      - "com.michishirube.description=Development database storage"
+  
+  go_mod_cache:
+    driver: local
+    labels:
+      - "com.michishirube.description=Go modules cache for development"
+
+networks:
+  default:
+    name: michishirube_network
+    labels:
+      - "com.michishirube.description=Michishirube application network"

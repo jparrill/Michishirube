@@ -468,8 +468,8 @@ func (h *WebHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 func (h *WebHandler) OpenAPISpec(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
 	
-	// Read the OpenAPI spec file
-	specPath := filepath.Join("design", "openapi.yaml")
+	// Read the generated OpenAPI spec file from Swaggo
+	specPath := filepath.Join("docs", "swagger.yaml")
 	content, err := os.ReadFile(specPath)
 	if err != nil {
 		log.Error("Failed to read OpenAPI spec", "error", err, "path", specPath)
@@ -552,4 +552,23 @@ func (h *WebHandler) SwaggerUI(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(swaggerHTML))
+}
+
+// SwaggerJSON - Serve the OpenAPI specification in JSON format
+func (h *WebHandler) SwaggerJSON(w http.ResponseWriter, r *http.Request) {
+	log := logger.FromContext(r.Context())
+	
+	// Read the generated OpenAPI spec file in JSON format from Swaggo
+	specPath := filepath.Join("docs", "swagger.json")
+	content, err := os.ReadFile(specPath)
+	if err != nil {
+		log.Error("Failed to read OpenAPI JSON spec", "error", err, "path", specPath)
+		http.Error(w, "OpenAPI specification not found", http.StatusNotFound)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(http.StatusOK)
+	w.Write(content)
 }

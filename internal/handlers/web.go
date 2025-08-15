@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -460,4 +462,94 @@ func (h *WebHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"status": "healthy", "timestamp": "` + time.Now().Format(time.RFC3339) + `"}`))
+}
+
+// OpenAPISpec - Serve the OpenAPI specification
+func (h *WebHandler) OpenAPISpec(w http.ResponseWriter, r *http.Request) {
+	log := logger.FromContext(r.Context())
+	
+	// Read the OpenAPI spec file
+	specPath := filepath.Join("design", "openapi.yaml")
+	content, err := os.ReadFile(specPath)
+	if err != nil {
+		log.Error("Failed to read OpenAPI spec", "error", err, "path", specPath)
+		http.Error(w, "OpenAPI specification not found", http.StatusNotFound)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "application/yaml")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.WriteHeader(http.StatusOK)
+	w.Write(content)
+}
+
+// SwaggerUI - Serve Swagger UI for API documentation
+func (h *WebHandler) SwaggerUI(w http.ResponseWriter, r *http.Request) {
+	log := logger.FromContext(r.Context())
+	log.Debug("Serving Swagger UI")
+	
+	// Get the current request URL to build the spec URL
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	specURL := fmt.Sprintf("%s://%s/openapi.yaml", scheme, r.Host)
+	
+	swaggerHTML := `<!DOCTYPE html>
+<html>
+<head>
+	<title>Michishirube API Documentation</title>
+	<link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui.css" />
+	<style>
+		html {
+			box-sizing: border-box;
+			overflow: -moz-scrollbars-vertical;
+			overflow-y: scroll;
+		}
+		
+		*, *:before, *:after {
+			box-sizing: inherit;
+		}
+		
+		body {
+			margin:0;
+			background: #fafafa;
+		}
+	</style>
+</head>
+<body>
+	<div id="swagger-ui"></div>
+
+	<script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-bundle.js"></script>
+	<script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-standalone-preset.js"></script>
+	<script>
+		window.onload = function() {
+			const ui = SwaggerUIBundle({
+				url: '` + specURL + `',
+				dom_id: '#swagger-ui',
+				deepLinking: true,
+				presets: [
+					SwaggerUIBundle.presets.apis,
+					SwaggerUIStandalonePreset
+				],
+				plugins: [
+					SwaggerUIBundle.plugins.DownloadUrl
+				],
+				layout: "StandaloneLayout",
+				validatorUrl: null,
+				tryItOutEnabled: true,
+				displayRequestDuration: true,
+				docExpansion: "list",
+				filter: true,
+				showExtensions: true,
+				showCommonExtensions: true
+			});
+		};
+	</script>
+</body>
+</html>`
+	
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(swaggerHTML))
 }

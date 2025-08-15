@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Green circular background -->
+  <circle cx="50" cy="50" r="50" fill="#7CB342"/>
+  
+  <!-- Left curly brace -->
+  <path d="M25 30 C20 30, 15 35, 15 40 L15 45 C15 48, 12 50, 9 50 C12 50, 15 52, 15 55 L15 60 C15 65, 20 70, 25 70" 
+        stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Right curly brace -->
+  <path d="M75 30 C80 30, 85 35, 85 40 L85 45 C85 48, 88 50, 91 50 C88 50, 85 52, 85 55 L85 60 C85 65, 80 70, 75 70" 
+        stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Three dots in the middle -->
+  <circle cx="40" cy="50" r="2.5" fill="white"/>
+  <circle cx="50" cy="50" r="2.5" fill="white"/>
+  <circle cx="60" cy="50" r="2.5" fill="white"/>
+</svg>

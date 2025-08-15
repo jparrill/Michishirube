@@ -43,12 +43,19 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/task/", webHandler.TaskDetail)
 	mux.HandleFunc("/new", webHandler.NewTask)
 	mux.HandleFunc("/health", webHandler.HealthCheck)
+	
+	// API Documentation routes
+	mux.HandleFunc("/docs", webHandler.SwaggerUI)
+	mux.HandleFunc("/swagger", webHandler.SwaggerUI)
+	mux.HandleFunc("/openapi.yaml", webHandler.OpenAPISpec)
 
 	// API routes (for AJAX calls from frontend)
 	mux.HandleFunc("/api/tasks", taskHandler.HandleTasks)
 	mux.HandleFunc("/api/tasks/", taskHandler.HandleTask)
 	mux.HandleFunc("/api/links", taskHandler.HandleLinks)
 	mux.HandleFunc("/api/links/", taskHandler.HandleLink)
+	mux.HandleFunc("/api/comments", taskHandler.HandleComments)
+	mux.HandleFunc("/api/comments/", taskHandler.HandleComment)
 	mux.HandleFunc("/api/report", taskHandler.HandleReport)
 
 	// Static files

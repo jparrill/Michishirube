@@ -181,10 +181,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /tasks/{id}/status:
     patch:
-      summary: Update task status
-      description: Update only the status of a task
+      summary: Partially update task
+      description: Partially update a task (status, priority, tags, blockers, etc.)
       parameters:
         - name: id
           in: path
@@ -197,16 +196,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateStatusRequest'
+              $ref: '#/components/schemas/PatchTaskRequest'
       responses:
         '200':
-          description: Status updated successfully
+          description: Task updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
         '400':
-          description: Invalid status value
+          description: Invalid request body
           content:
             application/json:
               schema:
@@ -218,41 +217,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /tasks/{taskId}/links:
-    get:
-      summary: Get links for task
-      description: Retrieve all links associated with a task
-      parameters:
-        - name: taskId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: List of links
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LinkListResponse'
-        '404':
-          description: Task not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
+  /links:
     post:
-      summary: Add link to task
-      description: Add a new link to a task
-      parameters:
-        - name: taskId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      summary: Create a new link
+      description: Create a new link for a task
       requestBody:
         required: true
         content:
@@ -268,12 +236,6 @@ paths:
                 $ref: '#/components/schemas/Link'
         '400':
           description: Invalid request body
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Task not found
           content:
             application/json:
               schema:
@@ -336,41 +298,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /tasks/{taskId}/comments:
-    get:
-      summary: Get comments for task
-      description: Retrieve all comments for a task
-      parameters:
-        - name: taskId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: List of comments
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CommentListResponse'
-        '404':
-          description: Task not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
+  /comments:
     post:
-      summary: Add comment to task
-      description: Add a new comment to a task
-      parameters:
-        - name: taskId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      summary: Create a new comment
+      description: Create a new comment for a task
       requestBody:
         required: true
         content:
@@ -383,15 +314,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Comment'
+                $ref: '#/components/schemas/CommentResponse'
         '400':
           description: Invalid request body
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Task not found
           content:
             application/json:
               schema:
@@ -418,68 +343,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /search:
+  /report:
     get:
-      summary: Search tasks
-      description: Search tasks by title, Jira ID, or content
-      parameters:
-        - name: q
-          in: query
-          required: true
-          description: Search query
-          schema:
-            type: string
-            example: "OCPBUGS-1234"
-        - name: include_archived
-          in: query
-          description: Include archived tasks
-          required: false
-          schema:
-            type: boolean
-            default: false
-        - name: limit
-          in: query
-          description: Maximum number of results
-          required: false
-          schema:
-            type: integer
-            default: 20
-            minimum: 1
-            maximum: 100
+      summary: Generate automatic status report
+      description: Generate a categorized report of tasks
       responses:
         '200':
-          description: Search results
+          description: Status report with categorized tasks
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SearchResponse'
-        '400':
-          description: Invalid query parameters
+                $ref: '#/components/schemas/ReportResponse'
+        '500':
+          description: Failed to generate report
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /search/suggestions:
-    get:
-      summary: Get search suggestions
-      description: Get suggestions for tags and Jira IDs
-      parameters:
-        - name: type
-          in: query
-          description: Type of suggestions to return
-          required: false
-          schema:
-            type: string
-            enum: [tags, jira_ids, all]
-            default: all
-      responses:
-        '200':
-          description: Search suggestions
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuggestionsResponse'
 
 components:
   schemas:
@@ -661,20 +541,18 @@ components:
           items:
             type: string
 
-    UpdateStatusRequest:
-      type: object
-      required:
-        - status
-      properties:
-        status:
-          $ref: '#/components/schemas/Status'
 
     CreateLinkRequest:
       type: object
       required:
+        - task_id
         - type
         - url
       properties:
+        task_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
         type:
           $ref: '#/components/schemas/LinkType'
         url:
@@ -709,8 +587,13 @@ components:
     CreateCommentRequest:
       type: object
       required:
+        - task_id
         - content
       properties:
+        task_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
         content:
           type: string
           example: "Found the root cause in the controller reconcile loop"
@@ -757,42 +640,59 @@ components:
           items:
             $ref: '#/components/schemas/Comment'
 
-    SearchResponse:
+    PatchTaskRequest:
       type: object
-      required:
-        - tasks
-        - query
-        - total
       properties:
-        tasks:
+        status:
+          $ref: '#/components/schemas/Status'
+        priority:
+          $ref: '#/components/schemas/Priority'
+        title:
+          type: string
+        tags:
           type: array
           items:
-            $ref: '#/components/schemas/Task'
-        query:
-          type: string
-          example: "OCPBUGS-1234"
-        total:
-          type: integer
-          example: 1
+            type: string
+        blockers:
+          type: array
+          items:
+            type: string
 
-    SuggestionsResponse:
+    CommentResponse:
       type: object
       required:
-        - suggestions
+        - id
+        - message
       properties:
-        suggestions:
-          type: object
-          properties:
-            tags:
-              type: array
-              items:
-                type: string
-              example: ["k8s", "memory", "frontend", "bug"]
-            jira_ids:
-              type: array
-              items:
-                type: string
-              example: ["OCPBUGS-1234", "OCPBUGS-5678"]
+        id:
+          type: string
+          format: uuid
+        message:
+          type: string
+          example: "Comment created successfully"
+
+    ReportResponse:
+      type: object
+      required:
+        - working_on
+        - next_up
+        - blockers
+      properties:
+        working_on:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskWithDetails'
+          description: "Tasks that are in progress or completed"
+        next_up:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskWithDetails'
+          description: "Tasks that are new or in progress, ordered by priority"
+        blockers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskWithDetails'
+          description: "Tasks that are currently blocked"
 
     ErrorResponse:
       type: object

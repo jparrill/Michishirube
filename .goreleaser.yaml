@@ -84,9 +84,6 @@ archives:
   - id: michishirube
     name_template: "michishirube_{{.Version}}_{{.Os}}_{{.Arch}}"
     
-    # Archive format
-    format: tar.gz
-    
     # Files to include in archives
     files:
       - README.md

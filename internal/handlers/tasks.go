@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"michishirube/internal/logger"
 	"michishirube/internal/models"
 	"michishirube/internal/storage"
 )
@@ -198,4 +199,176 @@ func (h *TaskHandler) deleteTask(w http.ResponseWriter, r *http.Request, taskID 
 func isValidationError(err error) bool {
 	_, ok := err.(*models.ValidationError)
 	return ok
+}
+
+// HandleLinks handles POST requests to create new links
+func (h *TaskHandler) HandleLinks(w http.ResponseWriter, r *http.Request) {
+	log := logger.FromContext(r.Context())
+	
+	switch r.Method {
+	case http.MethodPost:
+		h.createLink(w, r)
+	default:
+		log.Debug("Method not allowed for links", "method", r.Method)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// HandleLink handles individual link operations (GET, PUT, DELETE)
+func (h *TaskHandler) HandleLink(w http.ResponseWriter, r *http.Request) {
+	log := logger.FromContext(r.Context())
+	
+	// Extract link ID from URL path
+	path := strings.TrimPrefix(r.URL.Path, "/api/links/")
+	if path == "" {
+		log.Debug("Link ID required but not provided")
+		http.Error(w, "Link ID required", http.StatusBadRequest)
+		return
+	}
+
+	linkID := strings.Split(path, "/")[0]
+	log.Debug("HandleLink called", "link_id", linkID, "method", r.Method)
+
+	switch r.Method {
+	case http.MethodGet:
+		h.getLink(w, r, linkID)
+	case http.MethodPut:
+		h.updateLink(w, r, linkID)
+	case http.MethodDelete:
+		h.deleteLink(w, r, linkID)
+	default:
+		log.Debug("Method not allowed for link", "method", r.Method, "link_id", linkID)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *TaskHandler) createLink(w http.ResponseWriter, r *http.Request) {
+	log := logger.FromContext(r.Context())
+	log.Debug("Creating new link")
+
+	var link models.Link
+	if err := json.NewDecoder(r.Body).Decode(&link); err != nil {
+		log.Error("Failed to decode link JSON", "error", err)
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	log.Debug("Link data received", 
+		"task_id", link.TaskID,
+		"type", link.Type,
+		"url", link.URL,
+		"title", link.Title)
+
+	// Validate required fields
+	if link.TaskID == "" {
+		log.Debug("Missing task_id in link creation")
+		http.Error(w, "task_id is required", http.StatusBadRequest)
+		return
+	}
+	if link.URL == "" {
+		log.Debug("Missing URL in link creation")
+		http.Error(w, "url is required", http.StatusBadRequest)
+		return
+	}
+	if link.Type == "" {
+		log.Debug("Missing type in link creation")
+		http.Error(w, "type is required", http.StatusBadRequest)
+		return
+	}
+
+	// Set default values
+	if link.Title == "" {
+		link.Title = link.URL
+	}
+	if link.Status == "" {
+		link.Status = "active"
+	}
+
+	err := h.storage.CreateLink(&link)
+	if err != nil {
+		log.Error("Failed to create link", "error", err, "task_id", link.TaskID)
+		if isValidationError(err) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		} else {
+			http.Error(w, "Failed to create link", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	log.Info("Link created successfully", "link_id", link.ID, "task_id", link.TaskID, "type", link.Type)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(link)
+}
+
+func (h *TaskHandler) getLink(w http.ResponseWriter, r *http.Request, linkID string) {
+	log := logger.FromContext(r.Context())
+	log.Debug("Getting link", "link_id", linkID)
+
+	link, err := h.storage.GetLink(linkID)
+	if err != nil {
+		log.Error("Failed to get link", "error", err, "link_id", linkID)
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Link not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to get link", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(link)
+}
+
+func (h *TaskHandler) updateLink(w http.ResponseWriter, r *http.Request, linkID string) {
+	log := logger.FromContext(r.Context())
+	log.Debug("Updating link", "link_id", linkID)
+
+	var link models.Link
+	if err := json.NewDecoder(r.Body).Decode(&link); err != nil {
+		log.Error("Failed to decode link JSON for update", "error", err, "link_id", linkID)
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Ensure the ID matches the URL parameter
+	link.ID = linkID
+
+	err := h.storage.UpdateLink(&link)
+	if err != nil {
+		log.Error("Failed to update link", "error", err, "link_id", linkID)
+		if isValidationError(err) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		} else if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Link not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to update link", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	log.Info("Link updated successfully", "link_id", linkID)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(link)
+}
+
+func (h *TaskHandler) deleteLink(w http.ResponseWriter, r *http.Request, linkID string) {
+	log := logger.FromContext(r.Context())
+	log.Debug("Deleting link", "link_id", linkID)
+
+	err := h.storage.DeleteLink(linkID)
+	if err != nil {
+		log.Error("Failed to delete link", "error", err, "link_id", linkID)
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, "Link not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to delete link", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	log.Info("Link deleted successfully", "link_id", linkID)
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -59,7 +59,7 @@ func main() {
 	log.Info("Storage initialized successfully")
 
 	// Initialize and start server
-	srv := server.New(cfg, storage)
+	srv := server.New(cfg, storage, log)
 	log.Info("Starting HTTP server", "port", cfg.Port)
 	
 	if err := srv.Start(); err != nil {

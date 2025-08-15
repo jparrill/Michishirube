@@ -1,0 +1,219 @@
+{{define "content"}}
+<div class="task-detail">
+    <!-- Task Header -->
+    <div class="task-detail-header">
+        <div class="back-section">
+            <a href="/" class="back-link">← Back to Dashboard</a>
+        </div>
+        <div class="task-actions">
+            <button class="btn btn-secondary" onclick="editTask('{{.Task.ID}}')">✏️ Edit</button>
+            <button class="btn btn-danger" onclick="deleteTask('{{.Task.ID}}')">🗑️ Delete</button>
+        </div>
+    </div>
+
+    <!-- Task Info -->
+    <div class="task-info">
+        <div class="task-title-section">
+            <h1 class="task-title">
+                {{if ne .Task.JiraID "NO-JIRA"}}<span class="jira-id">[{{.Task.JiraID}}]</span>{{end}}
+                <span class="title-text">{{.Task.Title}}</span>
+            </h1>
+        </div>
+
+        <div class="task-meta-grid">
+            <div class="meta-item">
+                <label>Priority:</label>
+                <select class="priority-select" data-task-id="{{.Task.ID}}" onchange="updateTaskField(this, 'priority')">
+                    <option value="minor" {{if eq .Task.Priority "minor"}}selected{{end}}>⚪ Minor</option>
+                    <option value="normal" {{if eq .Task.Priority "normal"}}selected{{end}}>🟢 Normal</option>
+                    <option value="high" {{if eq .Task.Priority "high"}}selected{{end}}>🟡 High</option>
+                    <option value="critical" {{if eq .Task.Priority "critical"}}selected{{end}}>🔴 Critical</option>
+                </select>
+            </div>
+
+            <div class="meta-item">
+                <label>Status:</label>
+                <select class="status-select" data-task-id="{{.Task.ID}}" onchange="updateTaskField(this, 'status')">
+                    <option value="new" {{if eq .Task.Status "new"}}selected{{end}}>📝 New</option>
+                    <option value="in_progress" {{if eq .Task.Status "in_progress"}}selected{{end}}>🔄 In Progress</option>
+                    <option value="blocked" {{if eq .Task.Status "blocked"}}selected{{end}}>🚫 Blocked</option>
+                    <option value="done" {{if eq .Task.Status "done"}}selected{{end}}>✅ Done</option>
+                    <option value="archived" {{if eq .Task.Status "archived"}}selected{{end}}>📦 Archived</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Tags Section -->
+        <div class="tags-section">
+            <h3>🏷️ Tags</h3>
+            <div class="tags-container">
+                {{range .Task.Tags}}
+                <span class="tag editable-tag">
+                    {{.}}
+                    <button class="tag-remove" onclick="removeTag('{{$.Task.ID}}', '{{.}}')">&times;</button>
+                </span>
+                {{end}}
+                <div class="add-tag-form">
+                    <input type="text" class="tag-input" placeholder="Add tag..." id="new-tag-input" onkeypress="handleTagKeypress(event, '{{.Task.ID}}')">
+                    <button class="btn btn-small" onclick="addTag('{{.Task.ID}}')">+ Add</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Blockers Section -->
+        {{if or .Task.Blockers (eq .Task.Status "blocked")}}
+        <div class="blockers-section">
+            <h3>⚠️ Blockers</h3>
+            <div class="blockers-container">
+                {{if .Task.Blockers}}
+                    {{range $i, $blocker := .Task.Blockers}}
+                    <div class="blocker-item">
+                        <span class="blocker-text">• {{$blocker}}</span>
+                        <button class="blocker-remove" onclick="removeBlocker('{{$.Task.ID}}', {{$i}})">&times;</button>
+                    </div>
+                    {{end}}
+                {{else}}
+                    <p class="no-blockers">No blockers specified.</p>
+                {{end}}
+                <div class="add-blocker-form">
+                    <input type="text" class="blocker-input" placeholder="Add blocker..." id="new-blocker-input" onkeypress="handleBlockerKeypress(event, '{{.Task.ID}}')">
+                    <button class="btn btn-small" onclick="addBlocker('{{.Task.ID}}')">+ Add</button>
+                </div>
+            </div>
+        </div>
+        {{end}}
+    </div>
+
+    <!-- Links Section -->
+    <div class="links-section">
+        <h3>🔗 Related Links</h3>
+        <div class="links-container">
+            {{if .Links}}
+                {{range .Links}}
+                <div class="link-item">
+                    <div class="link-header">
+                        <span class="link-type">
+                            {{if eq .Type "pull_request"}}🔗 Pull Request{{end}}
+                            {{if eq .Type "slack_thread"}}💬 Slack Thread{{end}}
+                            {{if eq .Type "jira_ticket"}}📋 Jira Ticket{{end}}
+                            {{if eq .Type "documentation"}}📚 Documentation{{end}}
+                            {{if eq .Type "other"}}🌐 Other{{end}}
+                        </span>
+                        <span class="link-status status-{{.Status}}">{{.Status}}</span>
+                        <button class="link-remove" onclick="removeLink('{{.ID}}')">&times;</button>
+                    </div>
+                    <div class="link-content">
+                        <a href="{{.URL}}" target="_blank" class="link-title">{{.Title}}</a>
+                        <div class="link-url">{{.URL}}</div>
+                        {{if .Metadata}}<div class="link-metadata">{{.Metadata}}</div>{{end}}
+                    </div>
+                </div>
+                {{end}}
+            {{else}}
+                <p class="no-links">No related links yet.</p>
+            {{end}}
+            
+            <div class="add-link-actions">
+                <button class="btn btn-secondary" onclick="showAddLinkForm('pull_request')">+ Add PR</button>
+                <button class="btn btn-secondary" onclick="showAddLinkForm('slack_thread')">+ Add Slack</button>
+                <button class="btn btn-secondary" onclick="showAddLinkForm('jira_ticket')">+ Add Jira</button>
+                <button class="btn btn-secondary" onclick="showAddLinkForm('other')">+ Add Other</button>
+            </div>
+
+            <!-- Add Link Form (hidden by default) -->
+            <div id="add-link-form" class="add-link-form" style="display: none;">
+                <h4>Add New Link</h4>
+                <form onsubmit="addLink(event, '{{.Task.ID}}')">
+                    <div class="form-row">
+                        <label for="link-type">Type:</label>
+                        <select id="link-type" name="type" required>
+                            <option value="pull_request">🔗 Pull Request</option>
+                            <option value="slack_thread">💬 Slack Thread</option>
+                            <option value="jira_ticket">📋 Jira Ticket</option>
+                            <option value="documentation">📚 Documentation</option>
+                            <option value="other">🌐 Other</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="link-url">URL:</label>
+                        <input type="url" id="link-url" name="url" required placeholder="https://...">
+                    </div>
+                    <div class="form-row">
+                        <label for="link-title">Title:</label>
+                        <input type="text" id="link-title" name="title" placeholder="Link title (auto-detected if empty)">
+                    </div>
+                    <div class="form-row">
+                        <label for="link-status">Status:</label>
+                        <input type="text" id="link-status" name="status" placeholder="e.g., open, merged, active">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add Link</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideAddLinkForm()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comments Section -->
+    <div class="comments-section">
+        <h3>💬 Comments</h3>
+        <div class="comments-container">
+            {{if .Comments}}
+                {{range .Comments}}
+                <div class="comment-item">
+                    <div class="comment-header">
+                        <time class="comment-time" datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z"}}">
+                            {{.CreatedAt.Format "Jan 2, 2006 15:04"}}
+                        </time>
+                        <button class="comment-remove" onclick="removeComment('{{.ID}}')">&times;</button>
+                    </div>
+                    <div class="comment-content">{{.Content}}</div>
+                </div>
+                {{end}}
+            {{else}}
+                <p class="no-comments">No comments yet.</p>
+            {{end}}
+
+            <!-- Add Comment Form -->
+            <div class="add-comment-form">
+                <form onsubmit="addComment(event, '{{.Task.ID}}')">
+                    <textarea id="comment-content" name="content" placeholder="Add a comment..." rows="3" required></textarea>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add Comment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Metadata -->
+    <div class="task-metadata">
+        <div class="metadata-grid">
+            <div class="metadata-item">
+                <strong>Created:</strong> 
+                <time datetime="{{.Task.CreatedAt.Format "2006-01-02T15:04:05Z"}}">
+                    {{.Task.CreatedAt.Format "January 2, 2006 at 15:04"}}
+                </time>
+            </div>
+            <div class="metadata-item">
+                <strong>Last Updated:</strong> 
+                <time datetime="{{.Task.UpdatedAt.Format "2006-01-02T15:04:05Z"}}">
+                    {{.Task.UpdatedAt.Format "January 2, 2006 at 15:04"}}
+                </time>
+            </div>
+            <div class="metadata-item">
+                <strong>Task ID:</strong> 
+                <code>{{.Task.ID}}</code>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Indicator -->
+<div id="loading-indicator" class="loading-indicator" style="display: none;">
+    <div class="spinner"></div>
+    <span id="loading-text">Updating...</span>
+</div>
+
+{{end}}

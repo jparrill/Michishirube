@@ -1,0 +1,168 @@
+{{define "content"}}
+<div class="dashboard">
+    <!-- Search and Filters Section -->
+    <div class="search-section">
+        <form class="search-form" method="GET" action="/">
+            <div class="search-bar">
+                <input 
+                    type="text" 
+                    name="search" 
+                    placeholder="Search: JIRA ID, title, tags..." 
+                    value="{{.SearchQuery}}"
+                    class="search-input"
+                    id="search-input"
+                >
+                <button type="submit" class="search-btn">🔍</button>
+            </div>
+            <div class="search-options">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="include_archived" {{if .IncludeArchived}}checked{{end}}>
+                    <span class="checkmark">☐</span>
+                    Include archived
+                </label>
+            </div>
+        </form>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <div class="status-filters">
+            <a href="?status=" class="filter-tab {{if not .StatusFilter}}active{{end}}">All</a>
+            <a href="?status=new" class="filter-tab {{if eq .StatusFilter "new"}}active{{end}}">📝 New</a>
+            <a href="?status=in_progress" class="filter-tab {{if eq .StatusFilter "in_progress"}}active{{end}}">🔄 In Progress</a>
+            <a href="?status=blocked" class="filter-tab {{if eq .StatusFilter "blocked"}}active{{end}}">🚫 Blocked</a>
+            <a href="?status=done" class="filter-tab {{if eq .StatusFilter "done"}}active{{end}}">✅ Done</a>
+        </div>
+        <div class="priority-filter">
+            <label for="priority-select">Priority:</label>
+            <select name="priority" id="priority-select" onchange="this.form.submit()">
+                <option value="">All</option>
+                <option value="critical" {{if eq .PriorityFilter "critical"}}selected{{end}}>🔴 Critical</option>
+                <option value="high" {{if eq .PriorityFilter "high"}}selected{{end}}>🟡 High</option>
+                <option value="normal" {{if eq .PriorityFilter "normal"}}selected{{end}}>🟢 Normal</option>
+                <option value="minor" {{if eq .PriorityFilter "minor"}}selected{{end}}>⚪ Minor</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Tasks List -->
+    <div class="tasks-container">
+        {{if .Tasks}}
+            {{range .Tasks}}
+            <div class="task-card" data-task-id="{{.ID}}">
+                <div class="task-header">
+                    <div class="task-title">
+                        <a href="/task/{{.ID}}" class="task-link">
+                            <span class="jira-id">{{if ne .JiraID "NO-JIRA"}}[{{.JiraID}}]{{end}}</span>
+                            <span class="title-text">{{.Title}}</span>
+                        </a>
+                    </div>
+                    <div class="task-actions">
+                        <div class="status-dropdown">
+                            <select class="status-select" data-task-id="{{.ID}}" onchange="updateTaskStatus(this)">
+                                <option value="new" {{if eq (string .Status) "new"}}selected{{end}}>📝 New</option>
+                                <option value="in_progress" {{if eq (string .Status) "in_progress"}}selected{{end}}>🔄 In Progress</option>
+                                <option value="blocked" {{if eq (string .Status) "blocked"}}selected{{end}}>🚫 Blocked</option>
+                                <option value="done" {{if eq (string .Status) "done"}}selected{{end}}>✅ Done</option>
+                                <option value="archived" {{if eq (string .Status) "archived"}}selected{{end}}>📦 Archived</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="task-meta">
+                    <div class="meta-row">
+                        <span class="priority priority-{{string .Priority}}">
+                            {{if eq (string .Priority) "critical"}}🔴 Critical{{end}}
+                            {{if eq (string .Priority) "high"}}🟡 High{{end}}
+                            {{if eq (string .Priority) "normal"}}🟢 Normal{{end}}
+                            {{if eq (string .Priority) "minor"}}⚪ Minor{{end}}
+                        </span>
+                        <span class="separator">|</span>
+                        <span class="status status-{{string .Status}}">
+                            {{if eq (string .Status) "new"}}📝 New{{end}}
+                            {{if eq (string .Status) "in_progress"}}🔄 In Progress{{end}}
+                            {{if eq (string .Status) "blocked"}}🚫 Blocked{{end}}
+                            {{if eq (string .Status) "done"}}✅ Done{{end}}
+                            {{if eq (string .Status) "archived"}}📦 Archived{{end}}
+                        </span>
+                        {{if .Tags}}
+                        <span class="separator">|</span>
+                        <div class="tags">
+                            📋 {{range $i, $tag := .Tags}}{{if $i}}, {{end}}<span class="tag">{{$tag}}</span>{{end}}
+                        </div>
+                        {{end}}
+                    </div>
+
+                    {{if .Links}}
+                    <div class="meta-row">
+                        <div class="links-summary">
+                            {{range .Links}}
+                                <span class="link-indicator">
+                                    {{if eq .Type "pull_request"}}🔗 PR{{end}}
+                                    {{if eq .Type "slack_thread"}}💬 Slack{{end}}
+                                    {{if eq .Type "jira_ticket"}}📋 Jira{{end}}
+                                    {{if eq .Type "documentation"}}📚 Docs{{end}}
+                                    {{if eq .Type "other"}}🌐 Link{{end}}
+                                    {{if .Status}}<small>({{.Status}})</small>{{end}}
+                                </span>
+                            {{end}}
+                            {{if .Comments}}
+                            <span class="comments-indicator">💬 {{len .Comments}} comment{{if ne (len .Comments) 1}}s{{end}}</span>
+                            {{end}}
+                        </div>
+                    </div>
+                    {{end}}
+
+                    {{if .Blockers}}
+                    <div class="meta-row blockers-row">
+                        <div class="blockers">
+                            <span class="blockers-label">⚠️ Blocked by:</span>
+                            {{range $i, $blocker := .Blockers}}
+                                {{if $i}} • {{end}}<span class="blocker">{{$blocker}}</span>
+                            {{end}}
+                        </div>
+                    </div>
+                    {{end}}
+
+                    <div class="meta-row timestamps">
+                        <span class="timestamp">📅 Created: <time class="relative-time" datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z"}}">{{.CreatedAt.Format "Jan 2, 2006"}}</time></span>
+                        <span class="separator">|</span>
+                        <span class="timestamp">📝 Updated: <time class="relative-time" datetime="{{.UpdatedAt.Format "2006-01-02T15:04:05Z"}}">{{.UpdatedAt.Format "Jan 2, 15:04"}}</time></span>
+                    </div>
+                </div>
+            </div>
+            {{end}}
+
+            <!-- Pagination -->
+            {{if .HasMore}}
+            <div class="pagination">
+                <button class="btn btn-secondary load-more-btn" onclick="loadMoreTasks()">
+                    Load More...
+                </button>
+                <div class="pagination-info">
+                    Showing {{.Offset}} - {{.CurrentCount}} of {{.TotalCount}} tasks
+                </div>
+            </div>
+            {{end}}
+
+        {{else}}
+            <div class="empty-state">
+                <div class="empty-icon">📝</div>
+                <h3>No tasks found</h3>
+                <p>{{if .SearchQuery}}No tasks match your search criteria.{{else}}Get started by creating your first task!{{end}}</p>
+                <button class="btn btn-primary" onclick="window.location.href='/new'">
+                    ➕ Create First Task
+                </button>
+            </div>
+        {{end}}
+    </div>
+</div>
+
+<!-- Status Update Loading Indicator -->
+<div id="status-loading" class="loading-indicator" style="display: none;">
+    <div class="spinner"></div>
+    Updating...
+</div>
+
+{{end}}

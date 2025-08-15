@@ -1,0 +1,140 @@
+{{define "content"}}
+<div class="new-task">
+    <div class="form-header">
+        <h1>Create New Task</h1>
+        <a href="/" class="btn btn-secondary">Cancel</a>
+    </div>
+
+    <form class="task-form" method="POST" action="/new" onsubmit="validateTaskForm(event)">
+        <div class="form-section">
+            <div class="form-row">
+                <label for="jira_id">Jira ID:</label>
+                <div class="jira-input-group">
+                    <input 
+                        type="text" 
+                        id="jira_id" 
+                        name="jira_id" 
+                        placeholder="OCPBUGS-1234" 
+                        value="{{.JiraID}}"
+                        pattern="[A-Z]+-[0-9]+"
+                        title="Format: PROJECT-NUMBER (e.g., OCPBUGS-1234)"
+                    >
+                    <button type="button" class="btn btn-small" onclick="setNoJira()">No JIRA</button>
+                </div>
+                <small class="form-hint">Format: PROJECT-NUMBER (e.g., OCPBUGS-1234) or click "No JIRA"</small>
+            </div>
+
+            <div class="form-row">
+                <label for="title">Title: <span class="required">*</span></label>
+                <input 
+                    type="text" 
+                    id="title" 
+                    name="title" 
+                    required 
+                    placeholder="Brief description of the task"
+                    value="{{.Title}}"
+                    maxlength="200"
+                >
+                <small class="form-hint">Clear, concise description of what needs to be done</small>
+            </div>
+
+            <div class="form-row">
+                <label for="priority">Priority:</label>
+                <select id="priority" name="priority">
+                    <option value="minor" {{if eq .Priority "minor"}}selected{{end}}>⚪ Minor</option>
+                    <option value="normal" {{if eq .Priority "normal"}}selected{{end}} selected>🟢 Normal</option>
+                    <option value="high" {{if eq .Priority "high"}}selected{{end}}>🟡 High</option>
+                    <option value="critical" {{if eq .Priority "critical"}}selected{{end}}>🔴 Critical</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label for="tags">Tags:</label>
+                <div class="tags-input-container">
+                    <div class="tags-display" id="tags-display">
+                        {{range .Tags}}
+                        <span class="tag">
+                            {{.}}
+                            <button type="button" class="tag-remove" onclick="removeFormTag('{{.}}')">&times;</button>
+                        </span>
+                        {{end}}
+                    </div>
+                    <input 
+                        type="text" 
+                        id="tag-input" 
+                        placeholder="Add tags..."
+                        onkeypress="handleFormTagKeypress(event)"
+                        autocomplete="off"
+                    >
+                    <button type="button" class="btn btn-small" onclick="addFormTag()">Add Tag</button>
+                </div>
+                <input type="hidden" id="tags-hidden" name="tags" value="{{join .Tags ","}}">
+                <small class="form-hint">Common tags: frontend, backend, bug, feature, docs, urgent</small>
+            </div>
+        </div>
+
+        <!-- Initial Links Section -->
+        <div class="form-section">
+            <h3>Initial Links <span class="optional">(optional)</span></h3>
+            <div class="links-input-container" id="links-container">
+                {{range .Links}}
+                <div class="link-input-row">
+                    <select name="link_types[]">
+                        <option value="pull_request" {{if eq .Type "pull_request"}}selected{{end}}>🔗 Pull Request</option>
+                        <option value="slack_thread" {{if eq .Type "slack_thread"}}selected{{end}}>💬 Slack Thread</option>
+                        <option value="jira_ticket" {{if eq .Type "jira_ticket"}}selected{{end}}>📋 Jira Ticket</option>
+                        <option value="documentation" {{if eq .Type "documentation"}}selected{{end}}>📚 Documentation</option>
+                        <option value="other" {{if eq .Type "other"}}selected{{end}}>🌐 Other</option>
+                    </select>
+                    <input type="url" name="link_urls[]" placeholder="https://..." value="{{.URL}}" required>
+                    <input type="text" name="link_titles[]" placeholder="Title (optional)" value="{{.Title}}">
+                    <button type="button" class="btn btn-danger btn-small" onclick="removeLinkRow(this)">Remove</button>
+                </div>
+                {{end}}
+            </div>
+            <div class="add-link-actions">
+                <button type="button" class="btn btn-secondary" onclick="addLinkRow('pull_request')">+ Add PR</button>
+                <button type="button" class="btn btn-secondary" onclick="addLinkRow('slack_thread')">+ Add Slack</button>
+                <button type="button" class="btn btn-secondary" onclick="addLinkRow('jira_ticket')">+ Add Jira</button>
+                <button type="button" class="btn btn-secondary" onclick="addLinkRow('other')">+ Add Other</button>
+            </div>
+        </div>
+
+        <!-- Notes Section -->
+        <div class="form-section">
+            <div class="form-row">
+                <label for="notes">Initial Notes <span class="optional">(optional)</span>:</label>
+                <textarea 
+                    id="notes" 
+                    name="notes" 
+                    rows="4" 
+                    placeholder="Any additional context, requirements, or notes about this task..."
+                    maxlength="1000"
+                >{{.Notes}}</textarea>
+                <small class="form-hint">This will be added as the first comment if provided</small>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                ✅ Create Task
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="saveDraft()">
+                💾 Save as Draft
+            </button>
+            <a href="/" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<!-- Form Validation Messages -->
+<div id="validation-messages" class="validation-messages" style="display: none;">
+    <div class="validation-content">
+        <h4>Please fix the following issues:</h4>
+        <ul id="validation-list"></ul>
+        <button class="btn btn-secondary" onclick="hideValidationMessages()">OK</button>
+    </div>
+</div>
+
+{{end}}

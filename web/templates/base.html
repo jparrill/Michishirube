@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .PageTitle}}{{.PageTitle}} - {{end}}Michishirube</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="icon" type="image/png" href="/static/assets/favicon.png">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <h1 class="logo">
+                        <a href="/">🗯️ Michishirube</a>
+                    </h1>
+                    <span class="tagline">Personal Task Management</span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="window.location.href='/new'">
+                        ➕ New Task
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            {{template "content" .}}
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <span>Michishirube v1.0</span>
+                    <span class="separator">•</span>
+                    <span id="task-count">{{if .TaskCount}}{{.TaskCount}} tasks{{end}}</span>
+                </div>
+                <div class="footer-shortcuts">
+                    <span class="shortcut-hint">Press <kbd>/</kbd> to search, <kbd>n</kbd> for new task</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/static/js/main.js"></script>
+    {{if .CustomJS}}
+        <script src="/static/js/{{.CustomJS}}"></script>
+    {{end}}
+</body>
+</html>

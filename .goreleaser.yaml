@@ -15,39 +15,7 @@ before:
 
 # Build configuration
 builds:
-  # Darwin builds with CGO
-  - id: michishirube-darwin
-    main: ./cmd/server
-    binary: michishirube
-    
-    # Environment variables for the build
-    env:
-      - CGO_ENABLED=1  # Required for SQLite
-    
-    # Build for Darwin only (CGO works natively)
-    goos:
-      - darwin
-    
-    goarch:
-      - amd64
-      - arm64
-    
-    # Build flags and ldflags for optimization and version info
-    flags:
-      - -trimpath
-    
-    ldflags:
-      - -s -w
-      - -X main.version={{.Version}}
-      - -X main.commit={{.Commit}}
-      - -X main.date={{.Date}}
-      - -X main.builtBy=goreleaser
-    
-    # Build tags (if needed)
-    tags:
-      - sqlite_omit_load_extension
-
-  # Linux builds using pure Go SQLite
+  # Linux builds using pure Go SQLite (build first to avoid CGO conflicts)
   - id: michishirube-linux
     main: ./cmd/server
     binary: michishirube
@@ -78,6 +46,39 @@ builds:
     # Use pure Go SQLite driver
     tags:
       - purego
+
+  # Darwin builds with CGO (build after Linux to avoid conflicts)
+  - id: michishirube-darwin
+    main: ./cmd/server
+    binary: michishirube
+    
+    # Environment variables for the build
+    env:
+      - CGO_ENABLED=1  # Required for SQLite
+      - CC=clang       # Explicit C compiler
+    
+    # Build for Darwin only (CGO works natively)
+    goos:
+      - darwin
+    
+    goarch:
+      - amd64
+      - arm64
+    
+    # Build flags and ldflags for optimization and version info
+    flags:
+      - -trimpath
+    
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+    
+    # Build tags (if needed)
+    tags:
+      - sqlite_omit_load_extension
 
 # Archive configuration
 archives:

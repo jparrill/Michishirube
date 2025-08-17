@@ -1,6 +1,6 @@
 # Michishirube Makefile
 
-.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up docker-multiarch docker-dev docker-down docker-logs docker-help fixtures-update fixtures-validate generate docs dev-test release release-check release-snapshot ci-local ci-help
+.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up docker-multiarch docker-dev docker-down docker-logs docker-help fixtures-update fixtures-validate generate docs dev-test release release-check release-snapshot ci-local ci-help deps deps-update deps-clean deps-verify deps-help
 
 # Build the application
 build:
@@ -256,9 +256,9 @@ ci-local:
 	@echo "================================================"
 	@echo "This simulates the same steps as GitHub Actions CI pipeline"
 	@echo ""
-	@echo "Step 1/8: Downloading Go dependencies..."
-	@go mod download
-	@echo "✅ Dependencies downloaded"
+	@echo "Step 1/8: Managing Go dependencies..."
+	@make deps
+	@echo "✅ Dependencies managed"
 	@echo ""
 	@echo "Step 2/8: Generating code and documentation..."
 	@make generate
@@ -302,7 +302,7 @@ ci-help:
 	@echo "  make ci-help           - Show this help message"
 	@echo ""
 	@echo "The ci-local target simulates all steps from GitHub Actions:"
-	@echo "  1. Download Go dependencies (go mod download)"
+	@echo "  1. Manage Go dependencies (make deps)"
 	@echo "  2. Generate code and docs (make generate && make docs)"
 	@echo "  3. Run linter (make lint)"
 	@echo "  4. Run complete test suite (make test)"
@@ -312,3 +312,113 @@ ci-help:
 	@echo "  8. Validate GoReleaser config (make release-check)"
 	@echo ""
 	@echo "This helps catch issues before pushing to GitHub and triggering CI."
+
+# Dependency management
+deps:
+	@echo "📦 Managing Go dependencies..."
+	@echo "========================================="
+	@echo "Downloading and verifying dependencies..."
+	@go mod download
+	@go mod verify
+	@echo "✅ Dependencies downloaded and verified"
+	@echo ""
+	@echo "Tidying module files..."
+	@go mod tidy
+	@echo "✅ Module files tidied"
+	@echo ""
+	@echo "📋 Current dependency summary:"
+	@go list -m -mod=readonly all | wc -l | sed 's/^/  Total modules: /'
+	@echo "  Direct dependencies:"
+	@go list -m -f '{{if not .Indirect}}  - {{.Path}} {{.Version}}{{end}}' all | grep -v "^  -$$"
+	@echo ""
+	@echo "🎉 Dependency management completed!"
+
+# Update all dependencies to latest versions
+deps-update:
+	@echo "🔄 Updating all dependencies to latest versions..."
+	@echo "=============================================="
+	@echo "Getting latest versions for direct dependencies..."
+	@go get -u ./...
+	@echo "✅ Dependencies updated"
+	@echo ""
+	@echo "Tidying module files..."
+	@go mod tidy
+	@echo "✅ Module files tidied"
+	@echo ""
+	@echo "Verifying updated dependencies..."
+	@go mod verify
+	@echo "✅ Dependencies verified"
+	@echo ""
+	@echo "📋 Updated dependency summary:"
+	@go list -m -mod=readonly all | wc -l | sed 's/^/  Total modules: /'
+	@echo ""
+	@echo "⚠️  IMPORTANT: Review changes and run tests before committing!"
+	@echo "   Run: make test"
+
+# Clean dependency cache and reinstall
+deps-clean:
+	@echo "🧹 Cleaning dependency cache..."
+	@echo "================================="
+	@echo "Cleaning module cache..."
+	@go clean -modcache
+	@echo "✅ Module cache cleaned"
+	@echo ""
+	@echo "Re-downloading dependencies..."
+	@go mod download
+	@echo "✅ Dependencies re-downloaded"
+	@echo ""
+	@echo "Verifying dependencies..."
+	@go mod verify
+	@echo "✅ Dependencies verified"
+	@echo ""
+	@echo "🎉 Dependency cache cleaned and rebuilt!"
+
+# Verify dependency integrity and security
+deps-verify:
+	@echo "🔍 Verifying dependency integrity and security..."
+	@echo "================================================"
+	@echo "Verifying module integrity..."
+	@go mod verify
+	@echo "✅ Module integrity verified"
+	@echo ""
+	@echo "Checking for known vulnerabilities..."
+	@if command -v govulncheck >/dev/null 2>&1; then \
+		govulncheck ./...; \
+		echo "✅ Vulnerability check completed"; \
+	else \
+		echo "⚠️  govulncheck not installed. Install with:"; \
+		echo "   go install golang.org/x/vuln/cmd/govulncheck@latest"; \
+	fi
+	@echo ""
+	@echo "Analyzing dependency graph..."
+	@go mod graph | head -20
+	@echo "  ... (showing first 20 dependencies)"
+	@echo ""
+	@echo "📊 Dependency statistics:"
+	@echo "  Direct dependencies: $$(go list -m -f '{{if not .Indirect}}{{.Path}}{{end}}' all | grep -v '^$$' | wc -l | tr -d ' ')"
+	@echo "  Indirect dependencies: $$(go list -m -f '{{if .Indirect}}{{.Path}}{{end}}' all | grep -v '^$$' | wc -l | tr -d ' ')"
+	@echo "  Total modules: $$(go list -m all | wc -l | tr -d ' ')"
+
+# Show dependency management help
+deps-help:
+	@echo "Dependency management targets:"
+	@echo "  make deps              - Download, verify, and tidy dependencies"
+	@echo "  make deps-update       - Update all dependencies to latest versions"
+	@echo "  make deps-clean        - Clean cache and reinstall dependencies"
+	@echo "  make deps-verify       - Verify integrity and check for vulnerabilities"
+	@echo "  make deps-help         - Show this help message"
+	@echo ""
+	@echo "Common workflows:"
+	@echo "  Initial setup:         make deps"
+	@echo "  Regular maintenance:   make deps-update && make test"
+	@echo "  Troubleshoot issues:   make deps-clean"
+	@echo "  Security audit:        make deps-verify"
+	@echo ""
+	@echo "Additional tools (install separately):"
+	@echo "  govulncheck:          go install golang.org/x/vuln/cmd/govulncheck@latest"
+	@echo "  go mod outdated:      go install github.com/psampaz/go-mod-outdated@latest"
+	@echo ""
+	@echo "Tips:"
+	@echo "  - Always run tests after updating dependencies"
+	@echo "  - Review go.mod changes before committing"
+	@echo "  - Use deps-verify regularly for security"

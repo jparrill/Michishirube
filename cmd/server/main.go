@@ -21,7 +21,7 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -47,16 +47,16 @@ func main() {
 
 	// Handle version flag
 	if *showVersion {
-		fmt.Printf("Michishirube %s\n", version)
-		fmt.Printf("  Commit: %s\n", commit)
-		fmt.Printf("  Built:  %s\n", date)
-		fmt.Printf("  By:     %s\n", builtBy)
+		log.Printf("Michishirube %s", version)
+		log.Printf("  Commit: %s", commit)
+		log.Printf("  Built:  %s", date)
+		log.Printf("  By:     %s", builtBy)
 		os.Exit(0)
 	}
 	// Setup base logger with INFO level initially
 	baseLogger := logger.NewLogger(slog.LevelInfo)
 	ctx := logger.WithLogger(context.Background(), baseLogger)
-	
+
 	log := logger.FromContext(ctx)
 	log.Info("Starting Michishirube application")
 
@@ -101,7 +101,7 @@ func main() {
 	// Initialize and start server
 	srv := server.New(cfg, storage, log)
 	log.Info("Starting HTTP server", "port", cfg.Port)
-	
+
 	if err := srv.Start(); err != nil {
 		log.Error("Server failed", "error", err)
 		os.Exit(1)
@@ -110,19 +110,19 @@ func main() {
 
 func ensureDBDirectory(ctx context.Context, dbPath string) error {
 	log := logger.FromContext(ctx)
-	
+
 	dir := filepath.Dir(dbPath)
 	if dir == "." {
 		log.Debug("Database in current directory, no directory creation needed")
 		return nil
 	}
-	
+
 	log.Info("Creating database directory", "directory", dir)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		log.Error("Failed to create database directory", "directory", dir, "error", err)
 		return err
 	}
-	
+
 	log.Debug("Database directory created successfully", "directory", dir)
 	return nil
 }

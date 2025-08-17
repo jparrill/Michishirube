@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -23,25 +24,25 @@ type WebHandler struct {
 type PageData struct {
 	PageTitle string
 	CustomJS  string
-	
+
 	// Dashboard data
-	Tasks         []*TaskWithRelations
-	SearchQuery   string
-	StatusFilter  string
+	Tasks           []*TaskWithRelations
+	SearchQuery     string
+	StatusFilter    string
 	IncludeArchived bool
-	TaskCount     int
-	
+	TaskCount       int
+
 	// Pagination
 	Offset       int
 	CurrentCount int
 	TotalCount   int
 	HasMore      bool
-	
+
 	// Task detail data
 	Task     *models.Task
 	Links    []*models.Link
 	Comments []*models.Comment
-	
+
 	// Form data
 	JiraID   string
 	Title    string
@@ -62,7 +63,7 @@ func NewWebHandler(storage storage.Storage) *WebHandler {
 		"add":  func(a, b int) int { return a + b },
 		"eq":   func(a, b interface{}) bool { return a == b },
 		"ne":   func(a, b interface{}) bool { return a != b },
-		"len":  func(slice interface{}) int {
+		"len": func(slice interface{}) int {
 			switch s := slice.(type) {
 			case []*models.Link:
 				return len(s)
@@ -90,7 +91,7 @@ func NewWebHandler(storage storage.Storage) *WebHandler {
 			return nil
 		},
 	})
-	
+
 	templates, err := tmpl.ParseGlob("web/templates/*.html")
 	if err != nil {
 		panic("Failed to parse templates: " + err.Error())
@@ -105,16 +106,16 @@ func NewWebHandler(storage storage.Storage) *WebHandler {
 // Dashboard - Main page
 func (h *WebHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
-	log.Debug("Dashboard endpoint called", 
+	log.Debug("Dashboard endpoint called",
 		"search", r.URL.Query().Get("search"),
 		"status_filter", r.URL.Query().Get("status"))
-	
+
 	// Parse query parameters
 	query := r.URL.Query()
 	searchQuery := query.Get("search")
 	statusFilter := query.Get("status")
 	includeArchived := query.Get("include_archived") == "true" || query.Get("include_archived") == "1"
-	
+
 	limit := 20
 	offset := 0
 	if o := query.Get("offset"); o != "" {
@@ -161,10 +162,10 @@ func (h *WebHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		if task == nil {
 			continue
 		}
-		
+
 		links, _ := h.storage.GetTaskLinks(task.ID)
 		comments, _ := h.storage.GetTaskComments(task.ID)
-		
+
 		// Ensure we have empty slices instead of nil
 		if links == nil {
 			links = []*models.Link{}
@@ -172,7 +173,7 @@ func (h *WebHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		if comments == nil {
 			comments = []*models.Comment{}
 		}
-		
+
 		tasksWithRelations = append(tasksWithRelations, &TaskWithRelations{
 			Task:     task,
 			Links:    links,
@@ -203,13 +204,13 @@ func (h *WebHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
 // TaskDetail - Show individual task
 func (h *WebHandler) TaskDetail(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
-	
+
 	// Extract task ID from URL path
 	path := strings.TrimPrefix(r.URL.Path, "/task/")
 	taskID := strings.Split(path, "/")[0]
-	
+
 	log.Debug("TaskDetail endpoint called", "task_id", taskID)
-	
+
 	if taskID == "" {
 		http.Error(w, "Task ID required", http.StatusBadRequest)
 		return
@@ -225,7 +226,7 @@ func (h *WebHandler) TaskDetail(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	
+
 	if task == nil {
 		http.Error(w, "Task not found", http.StatusNotFound)
 		return
@@ -234,7 +235,7 @@ func (h *WebHandler) TaskDetail(w http.ResponseWriter, r *http.Request) {
 	// Get related data
 	links, _ := h.storage.GetTaskLinks(taskID)
 	comments, _ := h.storage.GetTaskComments(taskID)
-	
+
 	// Ensure we have empty slices instead of nil
 	if links == nil {
 		links = []*models.Link{}
@@ -269,7 +270,7 @@ func (h *WebHandler) NewTask(w http.ResponseWriter, r *http.Request) {
 func (h *WebHandler) showNewTaskForm(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
 	log.Debug("New task form requested")
-	
+
 	data := &PageData{
 		PageTitle: "New Task",
 		CustomJS:  "new_task.js",
@@ -282,7 +283,7 @@ func (h *WebHandler) showNewTaskForm(w http.ResponseWriter, r *http.Request) {
 func (h *WebHandler) createNewTask(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
 	log.Debug("Creating new task")
-	
+
 	// Parse form data
 	err := r.ParseForm()
 	if err != nil {
@@ -334,14 +335,15 @@ func (h *WebHandler) createNewTask(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error("Failed to create task", "error", err, "title", task.Title)
 		// If validation error, show form with error
-		if _, isValidation := err.(*models.ValidationError); isValidation {
-			h.showNewTaskFormWithError(w, r, err.Error(), task)
+		var validationErr *models.ValidationError
+		if errors.As(err, &validationErr) {
+			h.showNewTaskFormWithError(w, task)
 			return
 		}
 		http.Error(w, "Failed to create task: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	log.Info("Task created successfully", "task_id", task.ID, "title", task.Title, "priority", task.Priority)
 
 	// Create initial comment if notes provided
@@ -387,7 +389,7 @@ func (h *WebHandler) createNewTask(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/task/"+task.ID, http.StatusSeeOther)
 }
 
-func (h *WebHandler) showNewTaskFormWithError(w http.ResponseWriter, r *http.Request, errorMsg string, task *models.Task) {
+func (h *WebHandler) showNewTaskFormWithError(w http.ResponseWriter, task *models.Task) {
 	data := &PageData{
 		PageTitle: "New Task",
 		CustomJS:  "new_task.js",
@@ -405,14 +407,14 @@ func (h *WebHandler) showNewTaskFormWithError(w http.ResponseWriter, r *http.Req
 // Helper method to render templates
 func (h *WebHandler) renderTemplate(w http.ResponseWriter, templateName string, data *PageData) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	
+
 	// Parse the specific templates for this page
 	tmpl := template.New("").Funcs(template.FuncMap{
 		"join": strings.Join,
 		"add":  func(a, b int) int { return a + b },
 		"eq":   func(a, b interface{}) bool { return a == b },
 		"ne":   func(a, b interface{}) bool { return a != b },
-		"len":  func(slice interface{}) int {
+		"len": func(slice interface{}) int {
 			switch s := slice.(type) {
 			case []*models.Link:
 				return len(s)
@@ -440,14 +442,14 @@ func (h *WebHandler) renderTemplate(w http.ResponseWriter, templateName string, 
 			return nil
 		},
 	})
-	
+
 	// Parse base template and the specific page template
 	pageTemplate, err := tmpl.ParseFiles("web/templates/base.html", "web/templates/"+templateName)
 	if err != nil {
 		http.Error(w, "Template parse error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	err = pageTemplate.ExecuteTemplate(w, "base.html", data)
 	if err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
@@ -474,7 +476,7 @@ func (h *WebHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 // OpenAPISpec - Serve the OpenAPI specification
 func (h *WebHandler) OpenAPISpec(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
-	
+
 	// Read the generated OpenAPI spec file from Swaggo
 	specPath := filepath.Join("docs", "swagger.yaml")
 	content, err := os.ReadFile(specPath)
@@ -483,7 +485,7 @@ func (h *WebHandler) OpenAPISpec(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "OpenAPI specification not found", http.StatusNotFound)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/yaml")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
@@ -497,14 +499,14 @@ func (h *WebHandler) OpenAPISpec(w http.ResponseWriter, r *http.Request) {
 func (h *WebHandler) SwaggerUI(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
 	log.Debug("Serving Swagger UI")
-	
+
 	// Get the current request URL to build the spec URL
 	scheme := "http"
 	if r.TLS != nil {
 		scheme = "https"
 	}
 	specURL := fmt.Sprintf("%s://%s/openapi.yaml", scheme, r.Host)
-	
+
 	swaggerHTML := `<!DOCTYPE html>
 <html>
 <head>
@@ -516,11 +518,11 @@ func (h *WebHandler) SwaggerUI(w http.ResponseWriter, r *http.Request) {
 			overflow: -moz-scrollbars-vertical;
 			overflow-y: scroll;
 		}
-		
+
 		*, *:before, *:after {
 			box-sizing: inherit;
 		}
-		
+
 		body {
 			margin:0;
 			background: #fafafa;
@@ -558,7 +560,7 @@ func (h *WebHandler) SwaggerUI(w http.ResponseWriter, r *http.Request) {
 	</script>
 </body>
 </html>`
-	
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte(swaggerHTML)); err != nil {
@@ -570,7 +572,7 @@ func (h *WebHandler) SwaggerUI(w http.ResponseWriter, r *http.Request) {
 // SwaggerJSON - Serve the OpenAPI specification in JSON format
 func (h *WebHandler) SwaggerJSON(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
-	
+
 	// Read the generated OpenAPI spec file in JSON format from Swaggo
 	specPath := filepath.Join("docs", "swagger.json")
 	content, err := os.ReadFile(specPath)
@@ -579,7 +581,7 @@ func (h *WebHandler) SwaggerJSON(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "OpenAPI specification not found", http.StatusNotFound)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)

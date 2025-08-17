@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 )
@@ -121,7 +122,7 @@ func applyMigration(db *sql.DB, migration Migration) error {
 	defer func() {
 		if err := tx.Rollback(); err != nil {
 			// Only log if it's not because transaction was already committed
-			if err != sql.ErrTxDone {
+			if !errors.Is(err, sql.ErrTxDone) {
 				log.Printf("failed to rollback transaction: %v", err)
 			}
 		}

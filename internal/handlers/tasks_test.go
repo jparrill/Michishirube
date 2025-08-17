@@ -57,10 +57,10 @@ func createValidComment() *models.Comment {
 func TestNewTaskHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	assert.NotNil(t, handler)
 	assert.Equal(t, mockStorage, handler.storage)
 }
@@ -68,29 +68,29 @@ func TestNewTaskHandler(t *testing.T) {
 func TestTaskHandler_HandleTasks_GET(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	expectedTasks := []*models.Task{createValidTask()}
-	
+
 	mockStorage.EXPECT().
 		ListTasks(gomock.Any()).
 		Return(expectedTasks, nil).
 		Times(1)
-	
+
 	req := httptest.NewRequest(http.MethodGet, "/api/tasks", nil)
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTasks(w, req)
-	
+
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, float64(1), response["total"])
 	tasks := response["tasks"].([]interface{})
 	assert.Len(t, tasks, 1)
@@ -99,12 +99,12 @@ func TestTaskHandler_HandleTasks_GET(t *testing.T) {
 func TestTaskHandler_HandleTasks_GET_WithFilters(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	expectedTasks := []*models.Task{createValidTask()}
-	
+
 	// Verify that filters are parsed correctly
 	mockStorage.EXPECT().
 		ListTasks(gomock.Any()).
@@ -120,32 +120,32 @@ func TestTaskHandler_HandleTasks_GET_WithFilters(t *testing.T) {
 			return expectedTasks, nil
 		}).
 		Times(1)
-	
+
 	req := httptest.NewRequest(http.MethodGet, "/api/tasks?status=new,in_progress&priority=high&limit=10&offset=5&include_archived=true", nil)
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTasks(w, req)
-	
+
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestTaskHandler_HandleTasks_GET_StorageError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	mockStorage.EXPECT().
 		ListTasks(gomock.Any()).
 		Return(nil, fmt.Errorf("database connection failed")).
 		Times(1)
-	
+
 	req := httptest.NewRequest(http.MethodGet, "/api/tasks", nil)
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTasks(w, req)
-	
+
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, w.Body.String(), "database connection failed")
 }
@@ -153,13 +153,16 @@ func TestTaskHandler_HandleTasks_GET_StorageError(t *testing.T) {
 func TestTaskHandler_HandleTasks_POST_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	task := createValidTask()
-	taskJSON, _ := json.Marshal(task)
-	
+	var taskJSON []byte
+	var err error
+	taskJSON, err = json.Marshal(task)
+	require.NoError(t, err)
+
 	mockStorage.EXPECT().
 		CreateTask(gomock.Any()).
 		DoAndReturn(func(taskArg *models.Task) error {
@@ -169,18 +172,18 @@ func TestTaskHandler_HandleTasks_POST_Success(t *testing.T) {
 			return nil
 		}).
 		Times(1)
-	
+
 	req := httptest.NewRequest(http.MethodPost, "/api/tasks", bytes.NewBuffer(taskJSON))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTasks(w, req)
-	
+
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-	
+
 	var createdTask models.Task
-	err := json.Unmarshal(w.Body.Bytes(), &createdTask)
+	err = json.Unmarshal(w.Body.Bytes(), &createdTask)
 	require.NoError(t, err)
 	assert.Equal(t, task.Title, createdTask.Title)
 }
@@ -188,16 +191,16 @@ func TestTaskHandler_HandleTasks_POST_Success(t *testing.T) {
 func TestTaskHandler_HandleTasks_POST_InvalidJSON(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	req := httptest.NewRequest(http.MethodPost, "/api/tasks", strings.NewReader("invalid json"))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTasks(w, req)
-	
+
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "Invalid JSON")
 }
@@ -205,25 +208,28 @@ func TestTaskHandler_HandleTasks_POST_InvalidJSON(t *testing.T) {
 func TestTaskHandler_HandleTasks_POST_ValidationError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	task := createValidTask()
-	taskJSON, _ := json.Marshal(task)
-	
+	var taskJSON []byte
+	var err error
+	taskJSON, err = json.Marshal(task)
+	require.NoError(t, err)
+
 	validationErr := &models.ValidationError{Message: "Title is required"}
 	mockStorage.EXPECT().
 		CreateTask(gomock.Any()).
 		Return(validationErr).
 		Times(1)
-	
+
 	req := httptest.NewRequest(http.MethodPost, "/api/tasks", bytes.NewBuffer(taskJSON))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTasks(w, req)
-	
+
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "Title is required")
 }
@@ -231,15 +237,15 @@ func TestTaskHandler_HandleTasks_POST_ValidationError(t *testing.T) {
 func TestTaskHandler_HandleTasks_MethodNotAllowed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	req := httptest.NewRequest(http.MethodPatch, "/api/tasks", nil)
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTasks(w, req)
-	
+
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 	assert.Contains(t, w.Body.String(), "Method not allowed")
 }
@@ -247,30 +253,30 @@ func TestTaskHandler_HandleTasks_MethodNotAllowed(t *testing.T) {
 func TestTaskHandler_HandleTask_GET_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	task := createValidTask()
 	links := []*models.Link{createValidLink()}
 	comments := []*models.Comment{createValidComment()}
-	
+
 	mockStorage.EXPECT().GetTask("task-123").Return(task, nil).Times(1)
 	mockStorage.EXPECT().GetTaskLinks("task-123").Return(links, nil).Times(1)
 	mockStorage.EXPECT().GetTaskComments("task-123").Return(comments, nil).Times(1)
-	
+
 	req := httptest.NewRequest(http.MethodGet, "/api/tasks/task-123", nil)
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTask(w, req)
-	
+
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, task.ID, response["id"])
 	assert.Equal(t, task.Title, response["title"])
 	assert.NotNil(t, response["links"])
@@ -280,20 +286,20 @@ func TestTaskHandler_HandleTask_GET_Success(t *testing.T) {
 func TestTaskHandler_HandleTask_GET_NotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	mockStorage.EXPECT().
 		GetTask("nonexistent").
 		Return(nil, fmt.Errorf("task not found")).
 		Times(1)
-	
+
 	req := httptest.NewRequest(http.MethodGet, "/api/tasks/nonexistent", nil)
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTask(w, req)
-	
+
 	assert.Equal(t, http.StatusNotFound, w.Code)
 	assert.Contains(t, w.Body.String(), "Task not found")
 }
@@ -301,14 +307,17 @@ func TestTaskHandler_HandleTask_GET_NotFound(t *testing.T) {
 func TestTaskHandler_HandleTask_PUT_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	task := createValidTask()
 	task.Title = "Updated title"
-	taskJSON, _ := json.Marshal(task)
-	
+	var taskJSON []byte
+	var err error
+	taskJSON, err = json.Marshal(task)
+	require.NoError(t, err)
+
 	mockStorage.EXPECT().
 		UpdateTask(gomock.Any()).
 		DoAndReturn(func(taskArg *models.Task) error {
@@ -318,18 +327,18 @@ func TestTaskHandler_HandleTask_PUT_Success(t *testing.T) {
 			return nil
 		}).
 		Times(1)
-	
+
 	req := httptest.NewRequest(http.MethodPut, "/api/tasks/task-123", bytes.NewBuffer(taskJSON))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTask(w, req)
-	
+
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-	
+
 	var updatedTask models.Task
-	err := json.Unmarshal(w.Body.Bytes(), &updatedTask)
+	err = json.Unmarshal(w.Body.Bytes(), &updatedTask)
 	require.NoError(t, err)
 	assert.Equal(t, "task-123", updatedTask.ID)
 	assert.Equal(t, "Updated title", updatedTask.Title)
@@ -338,20 +347,20 @@ func TestTaskHandler_HandleTask_PUT_Success(t *testing.T) {
 func TestTaskHandler_HandleTask_DELETE_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	mockStorage.EXPECT().
 		DeleteTask("task-123").
 		Return(nil).
 		Times(1)
-	
+
 	req := httptest.NewRequest(http.MethodDelete, "/api/tasks/task-123", nil)
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTask(w, req)
-	
+
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
 }
@@ -359,15 +368,15 @@ func TestTaskHandler_HandleTask_DELETE_Success(t *testing.T) {
 func TestTaskHandler_HandleTask_NoTaskID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	req := httptest.NewRequest(http.MethodGet, "/api/tasks/", nil)
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTask(w, req)
-	
+
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, w.Body.String(), "Task ID required")
 }
@@ -375,15 +384,15 @@ func TestTaskHandler_HandleTask_NoTaskID(t *testing.T) {
 func TestTaskHandler_HandleTask_MethodNotAllowed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	req := httptest.NewRequest(http.MethodConnect, "/api/tasks/task-123", nil)
 	w := httptest.NewRecorder()
-	
+
 	handler.HandleTask(w, req)
-	
+
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 	assert.Contains(t, w.Body.String(), "Method not allowed")
 }
@@ -410,7 +419,7 @@ func TestIsValidationError(t *testing.T) {
 			expected: false,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := isValidationError(tt.err)
@@ -423,24 +432,24 @@ func TestIsValidationError(t *testing.T) {
 func BenchmarkTaskHandler_ListTasks(b *testing.B) {
 	ctrl := gomock.NewController(b)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	tasks := make([]*models.Task, 100)
 	for i := 0; i < 100; i++ {
 		task := createValidTask()
 		task.ID = fmt.Sprintf("task-%d", i)
 		tasks[i] = task
 	}
-	
+
 	mockStorage.EXPECT().
 		ListTasks(gomock.Any()).
 		Return(tasks, nil).
 		AnyTimes()
-	
+
 	req := httptest.NewRequest(http.MethodGet, "/api/tasks", nil)
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		w := httptest.NewRecorder()
@@ -451,18 +460,21 @@ func BenchmarkTaskHandler_ListTasks(b *testing.B) {
 func BenchmarkTaskHandler_CreateTask(b *testing.B) {
 	ctrl := gomock.NewController(b)
 	defer ctrl.Finish()
-	
+
 	mockStorage := mocks.NewMockStorage(ctrl)
 	handler := NewTaskHandler(mockStorage)
-	
+
 	task := createValidTask()
-	taskJSON, _ := json.Marshal(task)
-	
+	var taskJSON []byte
+	var err error
+	taskJSON, err = json.Marshal(task)
+	require.NoError(b, err)
+
 	mockStorage.EXPECT().
 		CreateTask(gomock.Any()).
 		Return(nil).
 		AnyTimes()
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		req := httptest.NewRequest(http.MethodPost, "/api/tasks", bytes.NewBuffer(taskJSON))

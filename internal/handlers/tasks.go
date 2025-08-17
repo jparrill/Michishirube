@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"sort"
 	"strconv"
@@ -43,13 +44,13 @@ func (h *TaskHandler) HandleTask(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
-		h.getTask(w, r, taskID)
+		h.getTask(w, taskID)
 	case http.MethodPut:
 		h.updateTask(w, r, taskID)
 	case http.MethodPatch:
 		h.patchTask(w, r, taskID)
 	case http.MethodDelete:
-		h.deleteTask(w, r, taskID)
+		h.deleteTask(w, taskID)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -173,7 +174,7 @@ func (h *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} models.TaskWithDetails
 // @Failure 404 {object} models.ErrorResponse
 // @Router /tasks/{id} [get]
-func (h *TaskHandler) getTask(w http.ResponseWriter, r *http.Request, taskID string) {
+func (h *TaskHandler) getTask(w http.ResponseWriter, taskID string) {
 	task, err := h.storage.GetTask(taskID)
 	switch {
 	case err == nil:
@@ -360,7 +361,7 @@ func (h *TaskHandler) patchTask(w http.ResponseWriter, r *http.Request, taskID s
 // @Success 204 "No Content"
 // @Failure 404 {object} models.ErrorResponse
 // @Router /tasks/{id} [delete]
-func (h *TaskHandler) deleteTask(w http.ResponseWriter, r *http.Request, taskID string) {
+func (h *TaskHandler) deleteTask(w http.ResponseWriter, taskID string) {
 	err := h.storage.DeleteTask(taskID)
 	switch err {
 	case nil:
@@ -371,7 +372,8 @@ func (h *TaskHandler) deleteTask(w http.ResponseWriter, r *http.Request, taskID 
 }
 
 func isValidationError(err error) bool {
-	_, ok := err.(*models.ValidationError)
+	var validationErr *models.ValidationError
+	ok := errors.As(err, &validationErr)
 	return ok
 }
 
@@ -398,12 +400,12 @@ func (h *TaskHandler) HandleReport(w http.ResponseWriter, r *http.Request) {
 // @Router /report [get]
 func (h *TaskHandler) generateReport(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
-	
+
 	// Get all non-archived tasks
 	allFilters := storage.TaskFilters{
 		IncludeArchived: false,
 	}
-	
+
 	allTasks, err := h.storage.ListTasks(allFilters)
 	if err != nil {
 		log.Error("Failed to get tasks for report", "error", err)
@@ -423,7 +425,7 @@ func (h *TaskHandler) generateReport(w http.ResponseWriter, r *http.Request) {
 		if links == nil {
 			links = []*models.Link{}
 		}
-		
+
 		return map[string]interface{}{
 			"id":         task.ID,
 			"jira_id":    task.JiraID,
@@ -454,15 +456,15 @@ func (h *TaskHandler) generateReport(w http.ResponseWriter, r *http.Request) {
 			// All in_progress tasks go to both working_on and next_up
 			workingOn = append(workingOn, taskWithLinks)
 			nextUp = append(nextUp, taskWithLinks)
-			
+
 		case models.Done:
 			// All completed tasks go to working_on
 			workingOn = append(workingOn, taskWithLinks)
-			
+
 		case models.New:
 			// All new tasks go to next_up, ordered by priority
 			nextUp = append(nextUp, taskWithLinks)
-			
+
 		case models.Blocked:
 			// All blocked tasks
 			blockers = append(blockers, taskWithLinks)
@@ -486,9 +488,9 @@ func (h *TaskHandler) generateReport(w http.ResponseWriter, r *http.Request) {
 	report["next_up"] = nextUp
 	report["blockers"] = blockers
 
-	log.Debug("Report generated", 
+	log.Debug("Report generated",
 		"working_on_count", len(workingOn),
-		"next_up_count", len(nextUp), 
+		"next_up_count", len(nextUp),
 		"blockers_count", len(blockers))
 
 	w.Header().Set("Content-Type", "application/json")
@@ -501,7 +503,7 @@ func (h *TaskHandler) generateReport(w http.ResponseWriter, r *http.Request) {
 // HandleLinks handles POST requests to create new links
 func (h *TaskHandler) HandleLinks(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
-	
+
 	switch r.Method {
 	case http.MethodPost:
 		h.createLink(w, r)
@@ -514,7 +516,7 @@ func (h *TaskHandler) HandleLinks(w http.ResponseWriter, r *http.Request) {
 // HandleLink handles individual link operations (GET, PUT, DELETE)
 func (h *TaskHandler) HandleLink(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
-	
+
 	// Extract link ID from URL path
 	path := strings.TrimPrefix(r.URL.Path, "/api/links/")
 	if path == "" {
@@ -560,7 +562,7 @@ func (h *TaskHandler) createLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debug("Link data received", 
+	log.Debug("Link data received",
 		"task_id", link.TaskID,
 		"type", link.Type,
 		"url", link.URL,
@@ -731,18 +733,18 @@ func (h *TaskHandler) HandleComments(w http.ResponseWriter, r *http.Request) {
 // HandleComment handles individual comment operations
 func (h *TaskHandler) HandleComment(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
-	
+
 	// Extract comment ID from URL path
 	path := strings.TrimPrefix(r.URL.Path, "/api/comments/")
 	commentID := strings.Split(path, "/")[0]
-	
+
 	log.Debug("HandleComment called", "comment_id", commentID, "method", r.Method)
-	
+
 	if commentID == "" {
 		http.Error(w, "Comment ID required", http.StatusBadRequest)
 		return
 	}
-	
+
 	switch r.Method {
 	case http.MethodDelete:
 		h.deleteComment(w, r, commentID)
@@ -763,45 +765,45 @@ func (h *TaskHandler) HandleComment(w http.ResponseWriter, r *http.Request) {
 // @Router /comments [post]
 func (h *TaskHandler) createComment(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(r.Context())
-	
+
 	var req struct {
 		TaskID  string `json:"task_id"`
 		Content string `json:"content"`
 	}
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Error("Failed to decode request body", "error", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	
+
 	log.Debug("Creating comment", "task_id", req.TaskID, "content_length", len(req.Content))
-	
+
 	// Validate input
 	if req.TaskID == "" {
 		http.Error(w, "task_id is required", http.StatusBadRequest)
 		return
 	}
-	
+
 	if strings.TrimSpace(req.Content) == "" {
 		http.Error(w, "content is required", http.StatusBadRequest)
 		return
 	}
-	
+
 	// Create comment
 	comment := &models.Comment{
 		TaskID:  req.TaskID,
 		Content: strings.TrimSpace(req.Content),
 	}
-	
+
 	if err := h.storage.CreateComment(comment); err != nil {
 		log.Error("Failed to create comment", "error", err)
 		http.Error(w, "Failed to create comment", http.StatusInternalServerError)
 		return
 	}
-	
+
 	log.Info("Comment created successfully", "comment_id", comment.ID, "task_id", req.TaskID)
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"id":      comment.ID,
@@ -822,17 +824,17 @@ func (h *TaskHandler) createComment(w http.ResponseWriter, r *http.Request) {
 // @Router /comments/{id} [delete]
 func (h *TaskHandler) deleteComment(w http.ResponseWriter, r *http.Request, commentID string) {
 	log := logger.FromContext(r.Context())
-	
+
 	log.Debug("Deleting comment", "comment_id", commentID)
-	
+
 	if err := h.storage.DeleteComment(commentID); err != nil {
 		log.Error("Failed to delete comment", "error", err, "comment_id", commentID)
 		http.Error(w, "Failed to delete comment", http.StatusInternalServerError)
 		return
 	}
-	
+
 	log.Info("Comment deleted successfully", "comment_id", commentID)
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]string{
 		"message": "Comment deleted successfully",

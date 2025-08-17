@@ -57,7 +57,7 @@ func TestConfig_Validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.config.validateAndFix(slog.Default())
-			
+
 			if tt.valid {
 				// Config should remain valid
 				assert.NotEmpty(t, tt.config.Port)
@@ -128,14 +128,14 @@ func TestLoad_WithDefaults(t *testing.T) {
 			t.Logf("failed to remove temp file: %v", err)
 		}
 	}()
-	
+
 	// Test with no config file (should use defaults)
 	baseLogger := logger.NewLogger(slog.LevelInfo)
 	ctx := logger.WithLogger(context.Background(), baseLogger)
-	
+
 	config, err := Load(ctx)
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, "8080", config.Port)
 	assert.Equal(t, "michishirube.db", config.DBPath)
 	assert.Equal(t, "info", config.LogLevel)
@@ -147,25 +147,25 @@ func TestLoad_WithConfigFile(t *testing.T) {
 db_path: "custom.db"
 log_level: "debug"
 `
-	
+
 	// Save current directory and change back after test
 	originalConfig := "config.yaml"
 	var originalContent []byte
 	var hadOriginal bool
-	
+
 	// Backup original config if exists
 	if data, err := os.ReadFile(originalConfig); err == nil {
 		originalContent = data
 		hadOriginal = true
 	}
-	
+
 	// Write test config
-	err := os.WriteFile(originalConfig, []byte(tempConfigContent), 0644)
+	err := os.WriteFile(originalConfig, []byte(tempConfigContent), 0600)
 	require.NoError(t, err)
-	
+
 	defer func() {
 		if hadOriginal {
-			if err := os.WriteFile(originalConfig, originalContent, 0644); err != nil {
+			if err := os.WriteFile(originalConfig, originalContent, 0600); err != nil {
 				t.Logf("failed to restore original config: %v", err)
 			}
 		} else {
@@ -174,13 +174,13 @@ log_level: "debug"
 			}
 		}
 	}()
-	
+
 	baseLogger := logger.NewLogger(slog.LevelInfo)
 	ctx := logger.WithLogger(context.Background(), baseLogger)
-	
+
 	config, err := Load(ctx)
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, "9090", config.Port)
 	assert.Equal(t, "custom.db", config.DBPath)
 	assert.Equal(t, "debug", config.LogLevel)
@@ -191,11 +191,11 @@ func TestLoad_WithEnvironmentVariables(t *testing.T) {
 	originalPort := os.Getenv("PORT")
 	originalDBPath := os.Getenv("DB_PATH")
 	originalLogLevel := os.Getenv("LOG_LEVEL")
-	
+
 	require.NoError(t, os.Setenv("PORT", "3000"))
 	require.NoError(t, os.Setenv("DB_PATH", "env.db"))
 	require.NoError(t, os.Setenv("LOG_LEVEL", "error"))
-	
+
 	defer func() {
 		if originalPort == "" {
 			if err := os.Unsetenv("PORT"); err != nil {
@@ -225,13 +225,13 @@ func TestLoad_WithEnvironmentVariables(t *testing.T) {
 			}
 		}
 	}()
-	
+
 	baseLogger := logger.NewLogger(slog.LevelInfo)
 	ctx := logger.WithLogger(context.Background(), baseLogger)
-	
+
 	config, err := Load(ctx)
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, "3000", config.Port)
 	assert.Equal(t, "env.db", config.DBPath)
 	assert.Equal(t, "error", config.LogLevel)

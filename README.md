@@ -184,6 +184,10 @@ Michishirube can be configured via environment variables:
 
 ### Available Commands
 
+Michishirube provides a comprehensive set of Makefile targets for development, testing, deployment, and maintenance. For detailed documentation of all available commands, see [docs/makefile.md](docs/makefile.md).
+
+#### Quick Reference
+
 ```bash
 # Development
 make build          # Build the application
@@ -202,24 +206,15 @@ make test-help     # Show all test-related commands
 make release-help  # Show all release-related commands
 ```
 
-See `make test-help` and `make release-help` for complete command lists.
+#### Key Workflows
 
-### Project Structure
+- **Daily Development**: `make deps && make generate && make test-unit && make run`
+- **Pre-commit**: `make lint && make test && make security`
+- **Pre-release**: `make ci-local && make release-check && make release`
+- **Troubleshooting**: `make deps-clean && make clean && make fixtures-update`
 
-```
-michishirube/
-├── cmd/server/         # Application entry point
-├── internal/
-│   ├── config/         # Configuration management
-│   ├── handlers/       # HTTP request handlers
-│   ├── models/         # Business entities and DTOs
-│   ├── server/         # HTTP server setup
-│   └── storage/        # Data persistence layer
-├── web/
-│   ├── static/         # CSS, JS, assets
-│   └── templates/      # HTML templates
-└── docs/              # Generated API documentation
-```
+For complete command documentation, examples, and best practices, see [docs/makefile.md](docs/makefile.md).
+
 
 ## Technology Stack
 

@@ -1,6 +1,6 @@
 # Michishirube Makefile
 
-.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up docker-multiarch docker-dev docker-down docker-logs docker-help fixtures-update fixtures-validate generate docs dev-test release release-check release-snapshot
+.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up docker-multiarch docker-dev docker-down docker-logs docker-help fixtures-update fixtures-validate generate docs dev-test release release-check release-snapshot ci-local ci-help
 
 # Build the application
 build:
@@ -249,3 +249,66 @@ docker-help:
 	@echo "  5. make docker-multiarch          - Build and push multiarch image to quay.io"
 	@echo ""
 	@echo "Registry: quay.io/jparrill/michishirube:latest (or version tag)"
+
+# Simulate CI/CD pipeline locally
+ci-local:
+	@echo "🚀 Running CI/CD pipeline simulation locally..."
+	@echo "================================================"
+	@echo "This simulates the same steps as GitHub Actions CI pipeline"
+	@echo ""
+	@echo "Step 1/8: Downloading Go dependencies..."
+	@go mod download
+	@echo "✅ Dependencies downloaded"
+	@echo ""
+	@echo "Step 2/8: Generating code and documentation..."
+	@make generate
+	@make docs
+	@echo "✅ Code generation completed"
+	@echo ""
+	@echo "Step 3/8: Running linter..."
+	@make lint
+	@echo "✅ Linting passed"
+	@echo ""
+	@echo "Step 4/8: Running complete test suite..."
+	@make test
+	@echo "✅ All tests passed"
+	@echo ""
+	@echo "Step 5/8: Running tests with coverage analysis..."
+	@make test-coverage
+	@echo "✅ Coverage analysis completed"
+	@echo ""
+	@echo "Step 6/8: Building application..."
+	@make build
+	@echo "✅ Application built successfully"
+	@echo ""
+	@echo "Step 7/8: Testing binary execution..."
+	@./build/michishirube --version
+	@timeout 10s ./build/michishirube > /dev/null 2>&1 || [ $$? -eq 124 ]
+	@echo "✅ Binary execution verified"
+	@echo ""
+	@echo "Step 8/8: Checking GoReleaser configuration..."
+	@make release-check
+	@echo "✅ GoReleaser configuration valid"
+	@echo ""
+	@echo "🎉 CI/CD pipeline simulation completed successfully!"
+	@echo "All steps that run in GitHub Actions have been verified locally."
+	@echo ""
+	@echo "Coverage report available at: build/coverage.html"
+
+# Show CI help
+ci-help:
+	@echo "CI/CD simulation targets:"
+	@echo "  make ci-local          - Run complete CI/CD pipeline simulation locally"
+	@echo "  make ci-help           - Show this help message"
+	@echo ""
+	@echo "The ci-local target simulates all steps from GitHub Actions:"
+	@echo "  1. Download Go dependencies (go mod download)"
+	@echo "  2. Generate code and docs (make generate && make docs)"
+	@echo "  3. Run linter (make lint)"
+	@echo "  4. Run complete test suite (make test)"
+	@echo "  5. Run coverage analysis (make test-coverage)"
+	@echo "  6. Build application (make build)"
+	@echo "  7. Test binary execution (version + startup test)"
+	@echo "  8. Validate GoReleaser config (make release-check)"
+	@echo ""
+	@echo "This helps catch issues before pushing to GitHub and triggering CI."

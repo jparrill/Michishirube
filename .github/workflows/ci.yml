@@ -10,6 +10,11 @@ on:
 # Environment variables
 env:
   GO_VERSION: '1.24.6'
+
+# Permissions for GitHub token
+permissions:
+  contents: read
+  security-events: write
   
 jobs:
   # Test and build job
@@ -112,6 +117,19 @@ jobs:
         go install github.com/securego/gosec/v2/cmd/gosec@latest
         go install golang.org/x/vuln/cmd/govulncheck@latest
         
+        # Generate SARIF for GitHub Security tab (always generate, even if no issues)
+        echo "Generating SARIF report for GitHub Security tab..."
+        gosec -fmt sarif -out gosec-results.sarif ./... || true
+        
+        # Verify SARIF file was created
+        if [ -f gosec-results.sarif ]; then
+          echo "✅ SARIF report generated successfully"
+          ls -la gosec-results.sarif
+        else
+          echo "⚠️ SARIF report not generated, creating empty report"
+          echo '{"runs":[{"tool":{"driver":{"name":"gosec"}},"results":[]}]}' > gosec-results.sarif
+        fi
+        
         # Run gosec in CI mode (fail on HIGH severity)
         echo "Running gosec security scanner for HIGH severity issues..."
         if gosec -severity high -confidence medium -quiet ./... >/dev/null 2>&1; then
@@ -125,9 +143,6 @@ jobs:
         # Run govulncheck
         echo "Running govulncheck..."
         govulncheck ./...
-        
-        # Generate SARIF for GitHub Security tab (informational)
-        gosec -fmt sarif -out gosec-results.sarif ./...
       
     - name: Upload Gosec scan results
       uses: github/codeql-action/upload-sarif@v3

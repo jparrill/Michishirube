@@ -9,7 +9,7 @@ Michishirube (Japanese for "signpost") is a personal task management tool design
 [![CI/CD Pipeline](https://github.com/jparrill/Michishirube/actions/workflows/ci.yml/badge.svg)](https://github.com/jparrill/Michishirube/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/jparrill/Michishirube/branch/main/graph/badge.svg)](https://codecov.io/gh/jparrill/Michishirube)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/jparrill/Michishirube)](https://github.com/jparrill/Michishirube/blob/main/go.mod)
-[![Go Documentation](https://godoc.org/github.com/jparrill/Michishirube?status.svg)](https://godoc.org/github.com/jparrill/Michishirube)
+[![Go Documentation](https://godoc.org/github.com/jparrill/Michishirube?status.svg)](https://godoc.org/github.com/jparrill/michishirube)
 [![Release](https://img.shields.io/github/v/release/jparrill/Michishirube)](https://github.com/jparrill/Michishirube/releases)
 [![License](https://img.shields.io/github/license/jparrill/Michishirube)](https://github.com/jparrill/Michishirube/blob/main/LICENSE)
 [![Docker Image (Quay.io)](https://img.shields.io/badge/quay.io-jparrill%2Fmichishirube-blue)](https://quay.io/repository/jparrill/michishirube)

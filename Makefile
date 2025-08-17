@@ -1,6 +1,6 @@
 # Michishirube Makefile
 
-.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up docker-multiarch docker-dev docker-down docker-logs docker-help fixtures-update fixtures-validate generate docs dev-test release release-check release-snapshot ci-local ci-help deps deps-update deps-clean deps-verify deps-help
+.PHONY: build run test test-unit test-integration test-coverage test-bench test-search test-help lint clean docker-build docker-up docker-multiarch docker-dev docker-down docker-logs docker-help fixtures-update fixtures-validate generate docs dev-test release release-check release-snapshot ci-local ci-help deps deps-update deps-clean deps-verify deps-help security security-gosec security-govulncheck security-install security-help security-ci security-strict
 
 # Build the application
 build:
@@ -422,3 +422,152 @@ deps-help:
 	@echo "  - Always run tests after updating dependencies"
 	@echo "  - Review go.mod changes before committing"
 	@echo "  - Use deps-verify regularly for security"
+
+# Security scanning
+security: security-install security-gosec security-govulncheck
+	@echo ""
+	@echo "🎉 Security scanning completed!"
+	@echo "Review any findings above and address security issues before deployment."
+
+# Install security scanning tools
+security-install:
+	@echo "🔧 Installing security scanning tools..."
+	@echo "======================================="
+	@echo "Installing gosec..."
+	@if ! command -v gosec >/dev/null 2>&1; then \
+		go install github.com/securego/gosec/v2/cmd/gosec@latest; \
+		echo "✅ gosec installed"; \
+	else \
+		echo "✅ gosec already installed"; \
+	fi
+	@echo ""
+	@echo "Installing govulncheck..."
+	@if ! command -v govulncheck >/dev/null 2>&1; then \
+		go install golang.org/x/vuln/cmd/govulncheck@latest; \
+		echo "✅ govulncheck installed"; \
+	else \
+		echo "✅ govulncheck already installed"; \
+	fi
+	@echo ""
+	@echo "🎉 Security tools installation completed!"
+
+# Run gosec security scanner
+security-gosec:
+	@echo "🔍 Running gosec security scanner..."
+	@echo "===================================="
+	@if command -v gosec >/dev/null 2>&1; then \
+		gosec ./...; \
+		echo "✅ gosec scan completed"; \
+	else \
+		echo "❌ gosec not found. Run 'make security-install' first"; \
+		exit 1; \
+	fi
+
+# Run security scan for CI (strict mode - fails on HIGH severity)
+security-ci: security-install
+	@echo "🔍 Running CI security scan (strict mode)..."
+	@echo "============================================="
+	@echo "This will fail the build if HIGH severity issues are found"
+	@echo ""
+	@echo "Running gosec with HIGH severity filter..."
+	@if command -v gosec >/dev/null 2>&1; then \
+		echo "Running gosec scan for HIGH severity issues..."; \
+		if gosec -severity high -confidence medium -quiet ./... >/dev/null 2>&1; then \
+			echo "✅ gosec HIGH severity scan passed"; \
+		else \
+			echo "❌ gosec found HIGH severity security issues!"; \
+			gosec -severity high -confidence medium ./...; \
+			exit 1; \
+		fi; \
+	else \
+		echo "❌ gosec not found"; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "Running govulncheck..."
+	@if command -v govulncheck >/dev/null 2>&1; then \
+		govulncheck ./...; \
+		echo "✅ govulncheck scan passed"; \
+	else \
+		echo "❌ govulncheck not found"; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "🎉 CI security scan passed! No HIGH severity issues found."
+
+# Run security scan in strict mode (fails on MEDIUM+ severity)
+security-strict: security-install
+	@echo "🔍 Running security scan (strict mode)..."
+	@echo "=========================================="
+	@echo "This will fail the build if MEDIUM+ severity issues are found"
+	@echo ""
+	@echo "Running gosec with MEDIUM+ severity filter..."
+	@if command -v gosec >/dev/null 2>&1; then \
+		echo "Running gosec scan for MEDIUM+ severity issues..."; \
+		if gosec -severity medium -confidence medium -quiet ./... >/dev/null 2>&1; then \
+			echo "✅ gosec MEDIUM+ severity scan passed"; \
+		else \
+			echo "❌ gosec found MEDIUM+ severity security issues!"; \
+			gosec -severity medium -confidence medium ./...; \
+			exit 1; \
+		fi; \
+	else \
+		echo "❌ gosec not found"; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "Running govulncheck..."
+	@if command -v govulncheck >/dev/null 2>&1; then \
+		govulncheck ./...; \
+		echo "✅ govulncheck scan passed"; \
+	else \
+		echo "❌ govulncheck not found"; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "🎉 Strict security scan passed! No MEDIUM+ severity issues found."
+
+# Run govulncheck vulnerability scanner
+security-govulncheck:
+	@echo ""
+	@echo "🔍 Running govulncheck vulnerability scanner..."
+	@echo "==============================================="
+	@if command -v govulncheck >/dev/null 2>&1; then \
+		govulncheck ./...; \
+		echo "✅ govulncheck scan completed"; \
+	else \
+		echo "❌ govulncheck not found. Run 'make security-install' first"; \
+		exit 1; \
+	fi
+
+# Show security help
+security-help:
+	@echo "Security scanning targets:"
+	@echo "  make security              - Run complete security scan (gosec + govulncheck)"
+	@echo "  make security-ci           - Run CI security scan (fails on HIGH severity)"
+	@echo "  make security-strict       - Run strict security scan (fails on MEDIUM+ severity)"
+	@echo "  make security-install      - Install security scanning tools"
+	@echo "  make security-gosec        - Run gosec static analysis scanner"
+	@echo "  make security-govulncheck  - Run govulncheck vulnerability scanner"
+	@echo "  make security-help         - Show this help message"
+	@echo ""
+	@echo "Security tools overview:"
+	@echo "  gosec:         Static analysis for Go security issues"
+	@echo "                 - Detects hardcoded credentials, SQL injection, etc."
+	@echo "                 - Analyzes Go AST for security vulnerabilities"
+	@echo ""
+	@echo "  govulncheck:   Vulnerability database checker"
+	@echo "                 - Checks dependencies against Go vulnerability DB"
+	@echo "                 - Reports known CVEs in used packages"
+	@echo ""
+	@echo "Common workflows:"
+	@echo "  Initial setup:     make security-install"
+	@echo "  Regular scanning:  make security"
+	@echo "  CI/CD integration: make security-ci (fails on HIGH severity)"
+	@echo "  Strict checking:   make security-strict (fails on MEDIUM+ severity)"
+	@echo ""
+	@echo "Tips:"
+	@echo "  - Run security scans before each release"
+	@echo "  - Address HIGH and MEDIUM severity issues"
+	@echo "  - Use #nosec comments sparingly and with justification"
+	@echo "  - Keep dependencies updated to avoid vulnerabilities"

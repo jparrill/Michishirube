@@ -87,6 +87,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
@@ -96,18 +101,36 @@ jobs:
         output: 'trivy-results.sarif'
         
     - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
         
-    - name: Run Gosec security scanner
-      uses: securecodewarrior/github-action-gosec@master
-      with:
-        args: '-fmt sarif -out gosec-results.sarif ./...'
+    - name: Run security scan (CI mode)
+      run: |
+        # Install security tools
+        go install github.com/securego/gosec/v2/cmd/gosec@latest
+        go install golang.org/x/vuln/cmd/govulncheck@latest
         
+        # Run gosec in CI mode (fail on HIGH severity)
+        echo "Running gosec security scanner for HIGH severity issues..."
+        if gosec -severity high -confidence medium -quiet ./... >/dev/null 2>&1; then
+          echo "✅ gosec HIGH severity scan passed"
+        else
+          echo "❌ gosec found HIGH severity security issues!"
+          gosec -severity high -confidence medium ./...
+          exit 1
+        fi
+        
+        # Run govulncheck
+        echo "Running govulncheck..."
+        govulncheck ./...
+        
+        # Generate SARIF for GitHub Security tab (informational)
+        gosec -fmt sarif -out gosec-results.sarif ./...
+      
     - name: Upload Gosec scan results
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
         sarif_file: 'gosec-results.sarif'

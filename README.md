@@ -1,14 +1,16 @@
 # Michishirube (道標)
 
+<img src="assets/michishirube-logo.png" align="left" width="120" style="margin-right: 20px;">
+
+> Personal task management application for developers
+
+Michishirube (Japanese for "signpost") is a personal task management tool designed specifically for developers. It helps organize daily work including Jira tickets, pull requests, Slack conversations, and provides a unified view of work items across different platforms.
+
 [![CI/CD Pipeline](https://github.com/jparrill/Michishirube/actions/workflows/ci.yml/badge.svg)](https://github.com/jparrill/Michishirube/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/jparrill/Michishirube/branch/main/graph/badge.svg)](https://codecov.io/gh/jparrill/Michishirube)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/jparrill/Michishirube)](https://github.com/jparrill/Michishirube/blob/main/go.mod)
 [![Release](https://img.shields.io/github/v/release/jparrill/Michishirube)](https://github.com/jparrill/Michishirube/releases)
 [![License](https://img.shields.io/github/license/jparrill/Michishirube)](https://github.com/jparrill/Michishirube/blob/main/LICENSE)
-
-> Personal task management application for developers
-
-Michishirube (Japanese for "signpost") is a personal task management tool designed specifically for developers. It helps organize daily work including Jira tickets, pull requests, Slack conversations, and provides a unified view of work items across different platforms.
 
 ## Features
 

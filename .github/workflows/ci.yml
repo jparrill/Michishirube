@@ -103,13 +103,13 @@ jobs:
         scan-type: 'fs'
         scan-ref: '.'
         format: 'sarif'
-        output: 'trivy-results.sarif'
+        output: 'build/trivy-results.sarif'
         
     - name: Upload Trivy scan results
       uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
-        sarif_file: 'trivy-results.sarif'
+        sarif_file: 'build/trivy-results.sarif'
         
     - name: Run security scan (CI mode)
       run: |
@@ -117,17 +117,20 @@ jobs:
         go install github.com/securego/gosec/v2/cmd/gosec@latest
         go install golang.org/x/vuln/cmd/govulncheck@latest
         
+        # Create build directory for security reports
+        mkdir -p build
+        
         # Generate SARIF for GitHub Security tab (always generate, even if no issues)
         echo "Generating SARIF report for GitHub Security tab..."
-        gosec -fmt sarif -out gosec-results.sarif ./... || true
+        gosec -fmt sarif -out build/gosec-results.sarif ./... || true
         
         # Verify SARIF file was created
-        if [ -f gosec-results.sarif ]; then
+        if [ -f build/gosec-results.sarif ]; then
           echo "✅ SARIF report generated successfully"
-          ls -la gosec-results.sarif
+          ls -la build/gosec-results.sarif
         else
           echo "⚠️ SARIF report not generated, creating empty report"
-          echo '{"runs":[{"tool":{"driver":{"name":"gosec"}},"results":[]}]}' > gosec-results.sarif
+          echo '{"runs":[{"tool":{"driver":{"name":"gosec"}},"results":[]}]}' > build/gosec-results.sarif
         fi
         
         # Run gosec in CI mode (fail on HIGH severity)
@@ -148,7 +151,7 @@ jobs:
       uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
-        sarif_file: 'gosec-results.sarif'
+        sarif_file: 'build/gosec-results.sarif'
 
   # Build snapshot on pushes to main
   snapshot:
@@ -189,7 +192,7 @@ jobs:
         args: release --snapshot --clean
         
     - name: Upload snapshot artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: snapshot-binaries
         path: dist/

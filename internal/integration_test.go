@@ -53,8 +53,12 @@ func setupIntegrationTest(t *testing.T) (*IntegrationTestSuite, func()) {
 	}
 	
 	cleanup := func() {
-		storage.Close()
-		os.Remove(tempDBPath)
+		if err := storage.Close(); err != nil {
+			t.Logf("failed to close storage: %v", err)
+		}
+		if err := os.Remove(tempDBPath); err != nil {
+			t.Logf("failed to remove temp DB: %v", err)
+		}
 	}
 	
 	return suite, cleanup
@@ -307,7 +311,11 @@ func TestIntegration_DatabaseMigrations(t *testing.T) {
 	// Create storage - this should run migrations automatically
 	storage, err := sqlite.New(tempDBPath)
 	require.NoError(t, err)
-	defer storage.Close()
+	defer func() {
+		if err := storage.Close(); err != nil {
+			t.Logf("failed to close storage: %v", err)
+		}
+	}()
 	
 	// Verify that tables were created by attempting to create a task
 	task := &models.Task{
@@ -344,12 +352,16 @@ log_level: "debug"
 	
 	// Set environment to point to our config
 	originalConfigPath := os.Getenv("CONFIG_PATH")
-	os.Setenv("CONFIG_PATH", configPath)
+	require.NoError(t, os.Setenv("CONFIG_PATH", configPath))
 	defer func() {
 		if originalConfigPath == "" {
-			os.Unsetenv("CONFIG_PATH")
+			if err := os.Unsetenv("CONFIG_PATH"); err != nil {
+				t.Logf("failed to unset CONFIG_PATH: %v", err)
+			}
 		} else {
-			os.Setenv("CONFIG_PATH", originalConfigPath)
+			if err := os.Setenv("CONFIG_PATH", originalConfigPath); err != nil {
+				t.Logf("failed to restore CONFIG_PATH: %v", err)
+			}
 		}
 	}()
 	
@@ -526,8 +538,12 @@ func setupIntegrationTestForBench(b *testing.B) (*IntegrationTestSuite, func()) 
 	}
 	
 	cleanup := func() {
-		storage.Close()
-		os.Remove(tempDBPath)
+		if err := storage.Close(); err != nil {
+			b.Logf("failed to close storage: %v", err)
+		}
+		if err := os.Remove(tempDBPath); err != nil {
+			b.Logf("failed to remove temp DB: %v", err)
+		}
 	}
 	
 	return suite, cleanup

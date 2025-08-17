@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+	"log"
 )
 
 type Migration struct {
@@ -117,7 +118,14 @@ func applyMigration(db *sql.DB, migration Migration) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			// Only log if it's not because transaction was already committed
+			if err != sql.ErrTxDone {
+				log.Printf("failed to rollback transaction: %v", err)
+			}
+		}
+	}()
 
 	// Execute migration SQL
 	if _, err := tx.Exec(migration.SQL); err != nil {

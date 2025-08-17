@@ -123,7 +123,11 @@ func TestIsValidLogLevel(t *testing.T) {
 func TestLoad_WithDefaults(t *testing.T) {
 	// Create temporary config file for testing
 	tempFile := "test_config.yaml"
-	defer os.Remove(tempFile)
+	defer func() {
+		if err := os.Remove(tempFile); err != nil {
+			t.Logf("failed to remove temp file: %v", err)
+		}
+	}()
 	
 	// Test with no config file (should use defaults)
 	baseLogger := logger.NewLogger(slog.LevelInfo)
@@ -161,9 +165,13 @@ log_level: "debug"
 	
 	defer func() {
 		if hadOriginal {
-			os.WriteFile(originalConfig, originalContent, 0644)
+			if err := os.WriteFile(originalConfig, originalContent, 0644); err != nil {
+				t.Logf("failed to restore original config: %v", err)
+			}
 		} else {
-			os.Remove(originalConfig)
+			if err := os.Remove(originalConfig); err != nil {
+				t.Logf("failed to remove test config: %v", err)
+			}
 		}
 	}()
 	
@@ -184,25 +192,37 @@ func TestLoad_WithEnvironmentVariables(t *testing.T) {
 	originalDBPath := os.Getenv("DB_PATH")
 	originalLogLevel := os.Getenv("LOG_LEVEL")
 	
-	os.Setenv("PORT", "3000")
-	os.Setenv("DB_PATH", "env.db")
-	os.Setenv("LOG_LEVEL", "error")
+	require.NoError(t, os.Setenv("PORT", "3000"))
+	require.NoError(t, os.Setenv("DB_PATH", "env.db"))
+	require.NoError(t, os.Setenv("LOG_LEVEL", "error"))
 	
 	defer func() {
 		if originalPort == "" {
-			os.Unsetenv("PORT")
+			if err := os.Unsetenv("PORT"); err != nil {
+				t.Logf("failed to unset PORT: %v", err)
+			}
 		} else {
-			os.Setenv("PORT", originalPort)
+			if err := os.Setenv("PORT", originalPort); err != nil {
+				t.Logf("failed to restore PORT: %v", err)
+			}
 		}
 		if originalDBPath == "" {
-			os.Unsetenv("DB_PATH")
+			if err := os.Unsetenv("DB_PATH"); err != nil {
+				t.Logf("failed to unset DB_PATH: %v", err)
+			}
 		} else {
-			os.Setenv("DB_PATH", originalDBPath)
+			if err := os.Setenv("DB_PATH", originalDBPath); err != nil {
+				t.Logf("failed to restore DB_PATH: %v", err)
+			}
 		}
 		if originalLogLevel == "" {
-			os.Unsetenv("LOG_LEVEL")
+			if err := os.Unsetenv("LOG_LEVEL"); err != nil {
+				t.Logf("failed to unset LOG_LEVEL: %v", err)
+			}
 		} else {
-			os.Setenv("LOG_LEVEL", originalLogLevel)
+			if err := os.Setenv("LOG_LEVEL", originalLogLevel); err != nil {
+				t.Logf("failed to restore LOG_LEVEL: %v", err)
+			}
 		}
 	}()
 	

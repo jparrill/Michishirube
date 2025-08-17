@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"michishirube/internal/models"
@@ -187,7 +188,11 @@ func (s *SQLiteStorage) ListTasks(filters storage.TaskFilters) ([]*models.Task, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("failed to close rows: %v", err)
+		}
+	}()
 
 	var tasks []*models.Task
 	for rows.Next() {
@@ -243,7 +248,11 @@ func (s *SQLiteStorage) SearchTasks(query string, includeArchived bool, limit in
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("failed to close rows: %v", err)
+		}
+	}()
 
 	var tasks []*models.Task
 	for rows.Next() {
@@ -334,7 +343,11 @@ func (s *SQLiteStorage) GetTaskLinks(taskID string) ([]*models.Link, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("failed to close rows: %v", err)
+		}
+	}()
 
 	var links []*models.Link
 	for rows.Next() {
@@ -399,7 +412,11 @@ func (s *SQLiteStorage) GetTaskComments(taskID string) ([]*models.Comment, error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("failed to close rows: %v", err)
+		}
+	}()
 
 	var comments []*models.Comment
 	for rows.Next() {

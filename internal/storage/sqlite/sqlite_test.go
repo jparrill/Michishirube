@@ -16,7 +16,9 @@ func setupTestDB(t *testing.T) (*SQLiteStorage, func()) {
 	// Create temporary database file
 	tmpFile, err := os.CreateTemp("", "test_michishirube_*.db")
 	require.NoError(t, err)
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		t.Logf("failed to close temp file: %v", err)
+	}
 	
 	dbPath := tmpFile.Name()
 	
@@ -26,8 +28,12 @@ func setupTestDB(t *testing.T) (*SQLiteStorage, func()) {
 	
 	// Return cleanup function
 	cleanup := func() {
-		store.Close()
-		os.Remove(dbPath)
+		if err := store.Close(); err != nil {
+			t.Logf("failed to close store: %v", err)
+		}
+		if err := os.Remove(dbPath); err != nil {
+			t.Logf("failed to remove temp DB file: %v", err)
+		}
 	}
 	
 	return store, cleanup

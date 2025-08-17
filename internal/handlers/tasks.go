@@ -124,7 +124,10 @@ func (h *TaskHandler) listTasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // createTask creates a new task
@@ -149,7 +152,10 @@ func (h *TaskHandler) createTask(w http.ResponseWriter, r *http.Request) {
 	case err == nil:
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(task)
+		if err := json.NewEncoder(w).Encode(task); err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
 	case isValidationError(err):
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	default:
@@ -196,7 +202,10 @@ func (h *TaskHandler) getTask(w http.ResponseWriter, r *http.Request, taskID str
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
 	case strings.Contains(err.Error(), "not found"):
 		http.Error(w, "Task not found", http.StatusNotFound)
 	default:
@@ -228,7 +237,10 @@ func (h *TaskHandler) updateTask(w http.ResponseWriter, r *http.Request, taskID 
 	switch {
 	case err == nil:
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(task)
+		if err := json.NewEncoder(w).Encode(task); err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
 	case isValidationError(err):
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	default:
@@ -334,7 +346,10 @@ func (h *TaskHandler) patchTask(w http.ResponseWriter, r *http.Request, taskID s
 	log.Info("Task patched successfully", "task_id", taskID)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(existingTask)
+	if err := json.NewEncoder(w).Encode(existingTask); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // deleteTask removes a task
@@ -477,7 +492,10 @@ func (h *TaskHandler) generateReport(w http.ResponseWriter, r *http.Request) {
 		"blockers_count", len(blockers))
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(report)
+	if err := json.NewEncoder(w).Encode(report); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // HandleLinks handles POST requests to create new links
@@ -588,7 +606,10 @@ func (h *TaskHandler) createLink(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(link)
+	if err := json.NewEncoder(w).Encode(link); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getLink retrieves a specific link
@@ -616,7 +637,10 @@ func (h *TaskHandler) getLink(w http.ResponseWriter, r *http.Request, linkID str
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(link)
+	if err := json.NewEncoder(w).Encode(link); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // updateLink updates a link
@@ -661,7 +685,10 @@ func (h *TaskHandler) updateLink(w http.ResponseWriter, r *http.Request, linkID 
 	log.Info("Link updated successfully", "link_id", linkID)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(link)
+	if err := json.NewEncoder(w).Encode(link); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // deleteLink removes a link
@@ -776,10 +803,13 @@ func (h *TaskHandler) createComment(w http.ResponseWriter, r *http.Request) {
 	log.Info("Comment created successfully", "comment_id", comment.ID, "task_id", req.TaskID)
 	
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"id":      comment.ID,
 		"message": "Comment created successfully",
-	})
+	}); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // deleteComment removes a comment
@@ -804,7 +834,10 @@ func (h *TaskHandler) deleteComment(w http.ResponseWriter, r *http.Request, comm
 	log.Info("Comment deleted successfully", "comment_id", commentID)
 	
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	if err := json.NewEncoder(w).Encode(map[string]string{
 		"message": "Comment deleted successfully",
-	})
+	}); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }

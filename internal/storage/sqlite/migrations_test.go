@@ -14,7 +14,9 @@ func setupTestMigrationDB(t *testing.T) (*sql.DB, func()) {
 	// Create temporary database file
 	tmpFile, err := os.CreateTemp("", "test_migrations_*.db")
 	require.NoError(t, err)
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		t.Logf("failed to close temp file: %v", err)
+	}
 	
 	dbPath := tmpFile.Name()
 	
@@ -24,8 +26,12 @@ func setupTestMigrationDB(t *testing.T) (*sql.DB, func()) {
 	
 	// Return cleanup function
 	cleanup := func() {
-		db.Close()
-		os.Remove(dbPath)
+		if err := db.Close(); err != nil {
+			t.Logf("failed to close database: %v", err)
+		}
+		if err := os.Remove(dbPath); err != nil {
+			t.Logf("failed to remove temp DB file: %v", err)
+		}
 	}
 	
 	return db, cleanup
@@ -60,7 +66,11 @@ func TestRunMigrations_SchemaVersioning(t *testing.T) {
 	// Check that all migration versions were recorded
 	rows, err := db.Query("SELECT version FROM schema_migrations ORDER BY version")
 	require.NoError(t, err)
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			t.Logf("failed to close rows: %v", err)
+		}
+	}()
 	
 	var versions []int
 	for rows.Next() {

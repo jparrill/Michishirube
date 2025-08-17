@@ -350,7 +350,9 @@ func (h *WebHandler) createNewTask(w http.ResponseWriter, r *http.Request) {
 			TaskID:  task.ID,
 			Content: notes,
 		}
-		h.storage.CreateComment(comment) // Ignore errors for initial comment
+		if err := h.storage.CreateComment(comment); err != nil {
+			log.Warn("Failed to create initial comment", "error", err)
+		}
 	}
 
 	// Process initial links if provided
@@ -375,7 +377,9 @@ func (h *WebHandler) createNewTask(w http.ResponseWriter, r *http.Request) {
 				Title:  title,
 				Status: "active",
 			}
-			h.storage.CreateLink(link) // Ignore errors for initial links
+			if err := h.storage.CreateLink(link); err != nil {
+				log.Warn("Failed to create initial link", "error", err, "url", linkURLs[i])
+			}
 		}
 	}
 
@@ -461,7 +465,10 @@ func (h *WebHandler) StaticFileHandler() http.Handler {
 func (h *WebHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status": "healthy", "timestamp": "` + time.Now().Format(time.RFC3339) + `"}`))
+	if _, err := w.Write([]byte(`{"status": "healthy", "timestamp": "` + time.Now().Format(time.RFC3339) + `"}`)); err != nil {
+		log := logger.FromContext(r.Context())
+		log.Error("Failed to write health check response", "error", err)
+	}
 }
 
 // OpenAPISpec - Serve the OpenAPI specification
@@ -480,7 +487,10 @@ func (h *WebHandler) OpenAPISpec(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/yaml")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
-	w.Write(content)
+	if _, err := w.Write(content); err != nil {
+		log.Error("Failed to write OpenAPI spec", "error", err)
+		return
+	}
 }
 
 // SwaggerUI - Serve Swagger UI for API documentation
@@ -551,7 +561,10 @@ func (h *WebHandler) SwaggerUI(w http.ResponseWriter, r *http.Request) {
 	
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(swaggerHTML))
+	if _, err := w.Write([]byte(swaggerHTML)); err != nil {
+		log := logger.FromContext(r.Context())
+		log.Error("Failed to write Swagger UI", "error", err)
+	}
 }
 
 // SwaggerJSON - Serve the OpenAPI specification in JSON format
@@ -570,5 +583,9 @@ func (h *WebHandler) SwaggerJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(http.StatusOK)
-	w.Write(content)
+	if _, err := w.Write(content); err != nil {
+		log := logger.FromContext(r.Context())
+		log.Error("Failed to write JSON spec", "error", err)
+		return
+	}
 }

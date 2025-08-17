@@ -107,13 +107,15 @@ docker-build:
 		--build-arg BUILT_BY=make-local \
 		-t quay.io/jparrill/michishirube:$$VERSION \
 		-t quay.io/jparrill/michishirube:latest \
-		-t michishirube:latest \
+		-t docker.io/padajuan/michishirube:$$VERSION \
+		-t docker.io/padajuan/michishirube:latest \
+		--push \
 		.
 
 # Docker multiarch build with buildx
 docker-multiarch:
 	@echo "Setting up Docker buildx for multiarch builds..."
-	docker buildx create --name michishirube-builder --use || docker buildx use michishirube-builder
+	docker buildx use michishirube-builder 2>/dev/null || docker buildx create --name michishirube-builder --use
 	@echo "Building for multiple architectures..."
 	@VERSION=$$(git describe --tags --exact-match 2>/dev/null || echo "latest"); \
 	docker buildx build \
@@ -124,6 +126,8 @@ docker-multiarch:
 		--build-arg BUILT_BY=make-multiarch \
 		-t quay.io/jparrill/michishirube:$$VERSION \
 		-t quay.io/jparrill/michishirube:latest \
+		-t docker.io/padajuan/michishirube:$$VERSION \
+		-t docker.io/padajuan/michishirube:latest \
 		--push \
 		.
 

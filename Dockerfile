@@ -2,10 +2,29 @@
 # Supports multiarch builds (amd64, arm64) with optimized SQLite drivers
 
 # Build stage
-FROM --platform=$BUILDPLATFORM golang:1.24.6-alpine AS builder
+FROM --platform=$BUILDPLATFORM debian:bookworm-slim AS builder
 
-# Install build dependencies
-RUN apk add --no-cache git ca-certificates tzdata gcc musl-dev sqlite-dev make
+# Build arguments for cross-compilation
+ARG TARGETOS TARGETARCH
+
+# Install build dependencies and Go 1.24.6
+RUN apt-get update && apt-get install -y \
+    git ca-certificates tzdata make wget tar \
+    gcc libc6-dev libsqlite3-dev \
+    gcc-aarch64-linux-gnu libc6-dev-arm64-cross \
+    gcc-x86-64-linux-gnu libc6-dev-amd64-cross && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Go 1.24.6 manually
+RUN GOARCH_MAP="amd64=amd64 arm64=arm64" && \
+    GOARCH_TARGET=$(echo $GOARCH_MAP | grep -o "$TARGETARCH=[^[:space:]]*" | cut -d= -f2) && \
+    wget -O go.tar.gz "https://go.dev/dl/go1.24.6.linux-${GOARCH_TARGET}.tar.gz" && \
+    tar -C /usr/local -xzf go.tar.gz && \
+    rm go.tar.gz
+
+ENV PATH="/usr/local/go/bin:$PATH"
+ENV GOPATH="/go"
+ENV PATH="$GOPATH/bin:$PATH"
 
 # Set working directory
 WORKDIR /app
@@ -19,19 +38,23 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build arguments for cross-compilation
-ARG TARGETOS TARGETARCH
-
 # Install build tools
-RUN go install github.com/golang/mock/mockgen@latest
-RUN go install github.com/swaggo/swag/cmd/swag@latest
+RUN CGO_ENABLED=0 go install github.com/golang/mock/mockgen@latest
+RUN CGO_ENABLED=0 go install github.com/swaggo/swag/cmd/swag@latest
 
 # Generate code and documentation
 RUN make generate
 RUN make docs
 
 # Build the application with architecture-specific optimizations
-RUN CGO_ENABLED=1 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+        export CC=aarch64-linux-gnu-gcc; \
+    elif [ "$TARGETARCH" = "amd64" ]; then \
+        export CC=x86_64-linux-gnu-gcc; \
+    else \
+        export CC=gcc; \
+    fi && \
+    CGO_ENABLED=1 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -ldflags="-w -s \
         -X main.version=${VERSION} \
         -X main.commit=$(git rev-parse --short HEAD 2>/dev/null || echo ${COMMIT}) \
@@ -42,14 +65,14 @@ RUN CGO_ENABLED=1 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     ./cmd/server
 
 # Final runtime stage
-FROM alpine:3.21
+FROM debian:bookworm-slim
 
 # Install runtime dependencies
-RUN apk add --no-cache ca-certificates tzdata sqlite wget
+RUN apt-get update && apt-get install -y ca-certificates tzdata sqlite3 wget && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN addgroup -g 1001 -S michishirube && \
-    adduser -u 1001 -S michishirube -G michishirube
+RUN groupadd -g 1001 michishirube && \
+    useradd -u 1001 -g michishirube -s /bin/bash -m michishirube
 
 # Set working directory
 WORKDIR /app

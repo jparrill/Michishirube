@@ -15,41 +15,41 @@ env:
 permissions:
   contents: read
   security-events: write
-  
+
 jobs:
   # Test and build job
   test:
     name: Test and Build
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
-      
+      uses: actions/checkout@v5
+
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
-        
+
     - name: Download dependencies
       run: go mod download
-      
+
     - name: Generate code (mocks, docs)
       run: |
         make generate
         make docs
-        
+
     - name: Run linter
       run: |
         go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
         make lint
-        
+
     - name: Run tests
       run: make test
-      
+
     - name: Run test coverage
       run: make test-coverage
-      
+
     - name: Upload coverage reports
       uses: codecov/codecov-action@v4
       with:
@@ -58,16 +58,16 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
-        
+
     - name: Build application
       run: make build
-      
+
     - name: Test binary execution
       run: |
         ./build/michishirube --version
         # Test that the binary starts (will exit after a few seconds)
         timeout 10s ./build/michishirube > /dev/null 2>&1 || [ $? -eq 124 ]
-        
+
     - name: Check GoReleaser configuration
       uses: goreleaser/goreleaser-action@v6
       with:
@@ -79,19 +79,19 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
-      
+      uses: actions/checkout@v5
+
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
-        
+
     - name: Create build directory
       run: mkdir -p build
-        
+
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@0.28.0
       with:
@@ -99,26 +99,26 @@ jobs:
         scan-ref: '.'
         format: 'sarif'
         output: 'build/trivy-results.sarif'
-        
+
     - name: Upload Trivy scan results
       uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
         sarif_file: 'build/trivy-results.sarif'
-        
+
     - name: Run security scan (CI mode)
       run: |
         # Install security tools
         go install github.com/securego/gosec/v2/cmd/gosec@latest
         go install golang.org/x/vuln/cmd/govulncheck@latest
-        
+
         # Create build directory for security reports
         mkdir -p build
-        
+
         # Generate SARIF for GitHub Security tab (always generate, even if no issues)
         echo "Generating SARIF report for GitHub Security tab..."
         gosec -fmt sarif -out build/gosec-results.sarif ./... || true
-        
+
         # Verify SARIF file was created
         if [ -f build/gosec-results.sarif ]; then
           echo "✅ SARIF report generated successfully"
@@ -127,7 +127,7 @@ jobs:
           echo "⚠️ SARIF report not generated, creating empty report"
           echo '{"runs":[{"tool":{"driver":{"name":"gosec"}},"results":[]}]}' > build/gosec-results.sarif
         fi
-        
+
         # Run gosec in CI mode (fail on HIGH severity)
         echo "Running gosec security scanner for HIGH severity issues..."
         if gosec -severity high -confidence medium -quiet ./... >/dev/null 2>&1; then
@@ -137,11 +137,11 @@ jobs:
           gosec -severity high -confidence medium ./...
           exit 1
         fi
-        
+
         # Run govulncheck
         echo "Running govulncheck..."
         govulncheck ./...
-      
+
     - name: Upload Gosec scan results
       uses: github/codeql-action/upload-sarif@v3
       if: always()

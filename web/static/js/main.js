@@ -254,6 +254,97 @@ function initializeKeyboardShortcuts() {
 }
 
 // Report functionality
+
+// Helper function to format links with proper titles
+function formatLinksForReport(links) {
+    if (!links || links.length === 0) return '';
+
+    const linkGroups = {};
+
+    // Group links by type
+    links.forEach(link => {
+        if (!linkGroups[link.type]) {
+            linkGroups[link.type] = [];
+        }
+        linkGroups[link.type].push(link);
+    });
+
+    let reportText = '';
+
+    // Format each group
+    Object.keys(linkGroups).forEach(type => {
+        const typeLinks = linkGroups[type];
+        let prefix = '';
+        let formattedLinks = [];
+
+        if (type === 'pull_request') {
+            prefix = 'PRs: ';
+            formattedLinks = typeLinks.map(link => {
+                // Use link title if available, otherwise use PR number from URL
+                if (link.title && link.title !== link.url) {
+                    return `[${link.title}](${link.url})`;
+                } else {
+                    const urlPath = link.url.split('/').pop();
+                    return `[PR-${urlPath}](${link.url})`;
+                }
+            });
+        } else if (type === 'slack_thread') {
+            prefix = 'Slack: ';
+            formattedLinks = typeLinks.map((link, index) => {
+                // Use link title if available, otherwise use thread-{index}
+                if (link.title && link.title !== link.url) {
+                    return `[${link.title}](${link.url})`;
+                } else {
+                    return `[thread-${index + 1}](${link.url})`;
+                }
+            });
+        } else if (type === 'jira_ticket') {
+            prefix = 'Jira related: ';
+            formattedLinks = typeLinks.map(link => {
+                // Use link title if available, otherwise use JIRA ID from URL
+                if (link.title && link.title !== link.url) {
+                    return `[${link.title}](${link.url})`;
+                } else {
+                    const urlPath = link.url.split('/').pop();
+                    return `[${urlPath}](${link.url})`;
+                }
+            });
+        } else if (type === 'documentation') {
+            prefix = 'Docs: ';
+            formattedLinks = typeLinks.map(link => {
+                // Use link title if available, otherwise use filename from URL
+                if (link.title && link.title !== link.url) {
+                    return `[${link.title}](${link.url})`;
+                } else {
+                    const urlPath = link.url.split('/').pop();
+                    const linkText = urlPath.includes('.') ? urlPath.split('.')[0] : urlPath;
+                    return `[${linkText}](${link.url})`;
+                }
+            });
+        } else {
+            prefix = `${type}: `;
+            formattedLinks = typeLinks.map((link, index) => {
+                // Use link title if available, otherwise use filename or title-{index}
+                if (link.title && link.title !== link.url && link.title !== '') {
+                    return `[${link.title}](${link.url})`;
+                } else {
+                    const urlPath = link.url.split('/').pop();
+                    if (urlPath && urlPath !== '') {
+                        const linkText = urlPath.includes('.') ? urlPath.split('.')[0] : urlPath;
+                        return `[${linkText}](${link.url})`;
+                    } else {
+                        return `[title-${index + 1}](${link.url})`;
+                    }
+                }
+            });
+        }
+
+        reportText += `  - ${prefix}${formattedLinks.join(', ')}\n`;
+    });
+
+    return reportText;
+}
+
 async function generateReport() {
     App.loading.show('Generating report...');
 
@@ -271,51 +362,7 @@ async function generateReport() {
 
                 // Add links if they exist, grouped by type
                 if (task.links && task.links.length > 0) {
-                    const linkGroups = {};
-
-                    // Group links by type
-                    task.links.forEach(link => {
-                        if (!linkGroups[link.type]) {
-                            linkGroups[link.type] = [];
-                        }
-                        linkGroups[link.type].push(link);
-                    });
-
-                    // Format each group
-                    Object.keys(linkGroups).forEach(type => {
-                        const links = linkGroups[type];
-                        let prefix = '';
-                        let formattedLinks = [];
-
-                        if (type === 'pull_request') {
-                            prefix = 'PRs: ';
-                            formattedLinks = links.map(link => {
-                                const urlPath = link.url.split('/').pop();
-                                return `[${urlPath}](${link.url})`;
-                            });
-                        } else if (type === 'slack_thread') {
-                            prefix = 'Slack: ';
-                            formattedLinks = links.map((link, index) => {
-                                return `[thread-${index + 1}](${link.url})`;
-                            });
-                        } else if (type === 'jira_ticket') {
-                            prefix = 'Jira related: ';
-                            formattedLinks = links.map(link => {
-                                const urlPath = link.url.split('/').pop();
-                                return `[${urlPath}](${link.url})`;
-                            });
-                        } else {
-                            prefix = `${type}: `;
-                            formattedLinks = links.map(link => {
-                                // For others, use the URL filename without extension as link text
-                                const urlPath = link.url.split('/').pop();
-                                const linkText = urlPath.includes('.') ? urlPath.split('.')[0] : urlPath;
-                                return `[${linkText}](${link.url})`;
-                            });
-                        }
-
-                        reportText += `  - ${prefix}${formattedLinks.join(', ')}\n`;
-                    });
+                    reportText += formatLinksForReport(task.links);
                 }
             });
         } else {
@@ -331,51 +378,7 @@ async function generateReport() {
 
                 // Add links if they exist, grouped by type
                 if (task.links && task.links.length > 0) {
-                    const linkGroups = {};
-
-                    // Group links by type
-                    task.links.forEach(link => {
-                        if (!linkGroups[link.type]) {
-                            linkGroups[link.type] = [];
-                        }
-                        linkGroups[link.type].push(link);
-                    });
-
-                    // Format each group
-                    Object.keys(linkGroups).forEach(type => {
-                        const links = linkGroups[type];
-                        let prefix = '';
-                        let formattedLinks = [];
-
-                        if (type === 'pull_request') {
-                            prefix = 'PRs: ';
-                            formattedLinks = links.map(link => {
-                                const urlPath = link.url.split('/').pop();
-                                return `[${urlPath}](${link.url})`;
-                            });
-                        } else if (type === 'slack_thread') {
-                            prefix = 'Slack: ';
-                            formattedLinks = links.map((link, index) => {
-                                return `[thread-${index + 1}](${link.url})`;
-                            });
-                        } else if (type === 'jira_ticket') {
-                            prefix = 'Jira related: ';
-                            formattedLinks = links.map(link => {
-                                const urlPath = link.url.split('/').pop();
-                                return `[${urlPath}](${link.url})`;
-                            });
-                        } else {
-                            prefix = `${type}: `;
-                            formattedLinks = links.map(link => {
-                                // For others, use the URL filename without extension as link text
-                                const urlPath = link.url.split('/').pop();
-                                const linkText = urlPath.includes('.') ? urlPath.split('.')[0] : urlPath;
-                                return `[${linkText}](${link.url})`;
-                            });
-                        }
-
-                        reportText += `  - ${prefix}${formattedLinks.join(', ')}\n`;
-                    });
+                    reportText += formatLinksForReport(task.links);
                 }
             });
         } else {
@@ -398,51 +401,7 @@ async function generateReport() {
 
                 // Add links if they exist, grouped by type
                 if (task.links && task.links.length > 0) {
-                    const linkGroups = {};
-
-                    // Group links by type
-                    task.links.forEach(link => {
-                        if (!linkGroups[link.type]) {
-                            linkGroups[link.type] = [];
-                        }
-                        linkGroups[link.type].push(link);
-                    });
-
-                    // Format each group
-                    Object.keys(linkGroups).forEach(type => {
-                        const links = linkGroups[type];
-                        let prefix = '';
-                        let formattedLinks = [];
-
-                        if (type === 'pull_request') {
-                            prefix = 'PRs: ';
-                            formattedLinks = links.map(link => {
-                                const urlPath = link.url.split('/').pop();
-                                return `[${urlPath}](${link.url})`;
-                            });
-                        } else if (type === 'slack_thread') {
-                            prefix = 'Slack: ';
-                            formattedLinks = links.map((link, index) => {
-                                return `[thread-${index + 1}](${link.url})`;
-                            });
-                        } else if (type === 'jira_ticket') {
-                            prefix = 'Jira related: ';
-                            formattedLinks = links.map(link => {
-                                const urlPath = link.url.split('/').pop();
-                                return `[${urlPath}](${link.url})`;
-                            });
-                        } else {
-                            prefix = `${type}: `;
-                            formattedLinks = links.map(link => {
-                                // For others, use the URL filename without extension as link text
-                                const urlPath = link.url.split('/').pop();
-                                const linkText = urlPath.includes('.') ? urlPath.split('.')[0] : urlPath;
-                                return `[${linkText}](${link.url})`;
-                            });
-                        }
-
-                        reportText += `  - ${prefix}${formattedLinks.join(', ')}\n`;
-                    });
+                    reportText += formatLinksForReport(task.links);
                 }
             });
         } else {

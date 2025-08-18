@@ -127,7 +127,7 @@ func (s *SQLiteStorage) UpdateTask(task *models.Task) error {
 	}
 
 	_, err = s.db.Exec(`
-		UPDATE tasks 
+		UPDATE tasks
 		SET jira_id = ?, title = ?, priority = ?, status = ?, tags = ?, blockers = ?, updated_at = ?
 		WHERE id = ?
 	`, task.JiraID, task.Title, task.Priority, task.Status, string(tagsJSON), string(blockersJSON), task.UpdatedAt, task.ID)
@@ -223,13 +223,13 @@ func (s *SQLiteStorage) ListTasks(filters storage.TaskFilters) ([]*models.Task, 
 
 func (s *SQLiteStorage) SearchTasks(query string, includeArchived bool, limit int) ([]*models.Task, error) {
 	sqlQuery := `
-		SELECT id, jira_id, title, priority, status, tags, blockers, created_at, updated_at 
-		FROM tasks 
+		SELECT id, jira_id, title, priority, status, tags, blockers, created_at, updated_at
+		FROM tasks
 		WHERE (title LIKE ? OR jira_id LIKE ? OR tags LIKE ?)
 	`
 	args := []interface{}{
 		"%" + query + "%",
-		"%" + query + "%", 
+		"%" + query + "%",
 		"%" + query + "%",
 	}
 
@@ -322,7 +322,7 @@ func (s *SQLiteStorage) UpdateLink(link *models.Link) error {
 	}
 
 	_, err := s.db.Exec(`
-		UPDATE links 
+		UPDATE links
 		SET task_id = ?, type = ?, url = ?, title = ?, status = ?, metadata = ?
 		WHERE id = ?
 	`, link.TaskID, link.Type, link.URL, link.Title, link.Status, link.Metadata, link.ID)

@@ -179,6 +179,9 @@ function handleBlockerKeypress(event, taskId) {
 
 // Links management
 function showAddLinkForm(type = 'other') {
+    // Hide edit form if it's open
+    hideEditLinkForm();
+    
     const form = document.getElementById('add-link-form');
     const typeSelect = form.querySelector('#link-type');
 
@@ -192,6 +195,38 @@ function showAddLinkForm(type = 'other') {
 
 function hideAddLinkForm() {
     const form = document.getElementById('add-link-form');
+    form.style.display = 'none';
+
+    // Clear form
+    form.querySelector('form').reset();
+}
+
+function editLink(linkId, type, url, title, status, taskId) {
+    // Hide add form if it's open
+    hideAddLinkForm();
+    
+    const form = document.getElementById('edit-link-form');
+    
+    // Populate form with current values
+    document.getElementById('edit-link-id').value = linkId;
+    document.getElementById('edit-link-type').value = type;
+    document.getElementById('edit-link-url').value = url;
+    document.getElementById('edit-link-title').value = title;
+    document.getElementById('edit-link-status').value = status;
+    
+    // Store taskId for later use
+    form.dataset.taskId = taskId;
+    
+    form.style.display = 'block';
+    
+    // Focus on title input
+    const titleInput = form.querySelector('#edit-link-title');
+    titleInput.focus();
+    titleInput.select();
+}
+
+function hideEditLinkForm() {
+    const form = document.getElementById('edit-link-form');
     form.style.display = 'none';
 
     // Clear form
@@ -225,6 +260,41 @@ async function addLink(event, taskId) {
     } catch (error) {
         console.error('Failed to add link:', error);
         App.notify.error('Failed to add link');
+    } finally {
+        App.loading.hide();
+    }
+}
+
+async function updateLink(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const editForm = document.getElementById('edit-link-form');
+
+    const linkId = formData.get('id');
+    const linkData = {
+        id: linkId,
+        task_id: editForm.dataset.taskId,  // Get taskId from the form data
+        type: formData.get('type'),
+        url: formData.get('url'),
+        title: formData.get('title') || formData.get('url'),
+        status: formData.get('status') || 'active'
+    };
+
+    App.loading.show('Updating link...');
+
+    try {
+        await App.api.put(`/api/links/${linkId}`, linkData);
+
+        hideEditLinkForm();
+
+        // Refresh page to show updated link
+        window.location.reload();
+
+    } catch (error) {
+        console.error('Failed to update link:', error);
+        App.notify.error('Failed to update link');
     } finally {
         App.loading.hide();
     }
@@ -396,6 +466,29 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             hideAddLinkForm();
+            hideEditLinkForm();
+        }
+    });
+
+    // Add event delegation for link buttons
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('link-edit')) {
+            const linkItem = e.target.closest('.link-item');
+            if (linkItem) {
+                const linkId = linkItem.dataset.linkId;
+                const linkType = linkItem.dataset.linkType;
+                const linkUrl = linkItem.dataset.linkUrl;
+                const linkTitle = linkItem.dataset.linkTitle;
+                const linkStatus = linkItem.dataset.linkStatus;
+                const taskId = linkItem.dataset.taskId;
+                editLink(linkId, linkType, linkUrl, linkTitle, linkStatus, taskId);
+            }
+        } else if (e.target.classList.contains('link-remove')) {
+            const linkItem = e.target.closest('.link-item');
+            if (linkItem) {
+                const linkId = linkItem.dataset.linkId;
+                removeLink(linkId);
+            }
         }
     });
 

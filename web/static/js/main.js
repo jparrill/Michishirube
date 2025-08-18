@@ -57,6 +57,13 @@ const App = {
             });
         },
 
+        async put(url, data) {
+            return this.request(url, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+        },
+
         async delete(url) {
             return this.request(url, {
                 method: 'DELETE',

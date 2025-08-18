@@ -16,4 +16,4 @@
     - other: [edit?tab=t](https://docs.google.com/document/1hkqO0QyZGBpE3_EJORLq2GN4xzf335geNvjpnLAZmuE/edit?tab=t.0#bookmark=id.sa5i1jqayfye)
 
 ## RFE
-- Add Case as another supported link type
+- [] Add Case as another supported link type

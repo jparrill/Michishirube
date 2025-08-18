@@ -90,17 +90,22 @@
         <div class="links-container">
             {{if .Links}}
                 {{range .Links}}
-                <div class="link-item" data-link-id="{{.ID}}">
+                <div class="link-item" data-link-id="{{.ID}}" data-link-type="{{.Type}}" data-link-url="{{.URL | html}}" data-link-title="{{.Title | html}}" data-link-status="{{.Status | html}}" data-task-id="{{.TaskID}}">
                     <div class="link-header">
-                        <span class="link-type">
-                            {{if eq .Type "pull_request"}}🔗 Pull Request{{end}}
-                            {{if eq .Type "slack_thread"}}💬 Slack Thread{{end}}
-                            {{if eq .Type "jira_ticket"}}📋 Jira Ticket{{end}}
-                            {{if eq .Type "documentation"}}📚 Documentation{{end}}
-                            {{if eq .Type "other"}}🌐 Other{{end}}
-                        </span>
-                        <span class="link-status status-{{.Status}}">{{.Status}}</span>
-                        <button class="link-remove" onclick="removeLink('{{.ID}}')">&times;</button>
+                        <div class="link-info">
+                            <span class="link-type">
+                                {{if eq .Type "pull_request"}}🔗 Pull Request{{end}}
+                                {{if eq .Type "slack_thread"}}💬 Slack Thread{{end}}
+                                {{if eq .Type "jira_ticket"}}📋 Jira Ticket{{end}}
+                                {{if eq .Type "documentation"}}📚 Documentation{{end}}
+                                {{if eq .Type "other"}}🌐 Other{{end}}
+                            </span>
+                            <span class="link-status status-{{.Status}}">{{.Status}}</span>
+                        </div>
+                        <div class="link-actions">
+                            <button class="link-edit" title="Edit link">✏️</button>
+                            <button class="link-remove" title="Remove link">&times;</button>
+                        </div>
                     </div>
                     <div class="link-content">
                         <a href="{{.URL}}" target="_blank" class="link-title">{{.Title}}</a>
@@ -149,6 +154,40 @@
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Add Link</button>
                         <button type="button" class="btn btn-secondary" onclick="hideAddLinkForm()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Edit Link Form (hidden by default) -->
+            <div id="edit-link-form" class="edit-link-form" style="display: none;">
+                <h4>Edit Link</h4>
+                <form onsubmit="updateLink(event)">
+                    <input type="hidden" id="edit-link-id" name="id">
+                    <div class="form-row">
+                        <label for="edit-link-type">Type:</label>
+                        <select id="edit-link-type" name="type" required>
+                            <option value="pull_request">🔗 Pull Request</option>
+                            <option value="slack_thread">💬 Slack Thread</option>
+                            <option value="jira_ticket">📋 Jira Ticket</option>
+                            <option value="documentation">📚 Documentation</option>
+                            <option value="other">🌐 Other</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label for="edit-link-url">URL:</label>
+                        <input type="url" id="edit-link-url" name="url" required placeholder="https://...">
+                    </div>
+                    <div class="form-row">
+                        <label for="edit-link-title">Title:</label>
+                        <input type="text" id="edit-link-title" name="title" placeholder="Link title">
+                    </div>
+                    <div class="form-row">
+                        <label for="edit-link-status">Status:</label>
+                        <input type="text" id="edit-link-status" name="status" placeholder="e.g., open, merged, active">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Update Link</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideEditLinkForm()">Cancel</button>
                     </div>
                 </form>
             </div>

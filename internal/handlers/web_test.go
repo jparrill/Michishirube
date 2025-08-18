@@ -116,15 +116,27 @@ func (m *MockWebStorage) RunMigrations() error {
 }
 
 // Implement other required methods with minimal functionality
-func (m *MockWebStorage) UpdateTask(task *models.Task) error          { return nil }
-func (m *MockWebStorage) DeleteTask(id string) error                  { return nil }
-func (m *MockWebStorage) CreateLink(link *models.Link) error          { return nil }
-func (m *MockWebStorage) GetLink(id string) (*models.Link, error)     { return nil, nil }
-func (m *MockWebStorage) UpdateLink(link *models.Link) error          { return nil }
-func (m *MockWebStorage) DeleteLink(id string) error                  { return nil }
-func (m *MockWebStorage) CreateComment(comment *models.Comment) error { return nil }
-func (m *MockWebStorage) DeleteComment(id string) error               { return nil }
-func (m *MockWebStorage) Close() error                                { return nil }
+func (m *MockWebStorage) UpdateTask(task *models.Task) error { return nil }
+func (m *MockWebStorage) DeleteTask(id string) error         { return nil }
+func (m *MockWebStorage) CreateLink(link *models.Link) error {
+	if link.TaskID == "" {
+		return &models.ValidationError{Message: "TaskID is required"}
+	}
+	m.links[link.TaskID] = append(m.links[link.TaskID], link)
+	return nil
+}
+func (m *MockWebStorage) GetLink(id string) (*models.Link, error) { return nil, nil }
+func (m *MockWebStorage) UpdateLink(link *models.Link) error      { return nil }
+func (m *MockWebStorage) DeleteLink(id string) error              { return nil }
+func (m *MockWebStorage) CreateComment(comment *models.Comment) error {
+	if comment.TaskID == "" {
+		return &models.ValidationError{Message: "TaskID is required"}
+	}
+	m.comments[comment.TaskID] = append(m.comments[comment.TaskID], comment)
+	return nil
+}
+func (m *MockWebStorage) DeleteComment(id string) error { return nil }
+func (m *MockWebStorage) Close() error                  { return nil }
 
 // Helper function to create test context
 func createTestContext() context.Context {
@@ -142,6 +154,65 @@ func createTestRequest(method, url string, body string) *http.Request {
 	}
 	req = req.WithContext(createTestContext())
 	return req
+}
+
+// Helper function to create handler using a symlink to real templates when templates are not present
+func createHandlerWithSymlinkTemplates(t *testing.T) *WebHandler {
+	// Create a temporary working directory
+	tempDir, err := os.MkdirTemp("", "test_symlink_templates")
+	require.NoError(t, err)
+
+	// Ensure temp web directory exists
+	webDir := filepath.Join(tempDir, "web")
+	err = os.MkdirAll(webDir, 0755)
+	require.NoError(t, err)
+
+	// Resolve source templates directory by walking up from current working dir
+	findTemplates := func(start string) (string, bool) {
+		d := start
+		for i := 0; i < 6; i++ {
+			candidate := filepath.Join(d, "web", "templates")
+			if st, err := os.Stat(candidate); err == nil && st.IsDir() {
+				return candidate, true
+			}
+			parent := filepath.Dir(d)
+			if parent == d {
+				break
+			}
+			d = parent
+		}
+		return "", false
+	}
+
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	srcTemplates, ok := findTemplates(cwd)
+	if !ok {
+		require.FailNowf(t, "templates not found", "could not locate web/templates from %s", cwd)
+	}
+
+	// Create symlink at tempDir/web/templates pointing to repo templates
+	dstTemplates := filepath.Join(webDir, "templates")
+	// In case it already exists from prior runs
+	_ = os.RemoveAll(dstTemplates)
+	err = os.Symlink(srcTemplates, dstTemplates)
+	require.NoError(t, err)
+
+	// Change to temp directory so NewWebHandler parses tempDir/web/templates
+	originalDir, err := os.Getwd()
+	require.NoError(t, err)
+	err = os.Chdir(tempDir)
+	require.NoError(t, err)
+
+	// Cleanup and restore after test
+	t.Cleanup(func() {
+		_ = os.Chdir(originalDir)
+		_ = os.RemoveAll(tempDir)
+	})
+
+	mockStorage := NewMockWebStorage()
+	handler := NewWebHandler(mockStorage)
+	return handler
 }
 
 // Helper function to create test handler with templates
@@ -421,7 +492,7 @@ func TestWebHandler_SwaggerUI(t *testing.T) {
 }
 
 func TestWebHandler_NewTask_GET(t *testing.T) {
-	handler := createSimpleTestHandler(t)
+	handler := createHandlerWithSymlinkTemplates(t)
 
 	req := createTestRequest(http.MethodGet, "/new", "")
 	w := httptest.NewRecorder()
@@ -432,7 +503,7 @@ func TestWebHandler_NewTask_GET(t *testing.T) {
 }
 
 func TestWebHandler_NewTask_MethodNotAllowed(t *testing.T) {
-	handler := createTestHandler(t)
+	handler := createHandlerWithSymlinkTemplates(t)
 
 	req := createTestRequest(http.MethodPut, "/new", "")
 	w := httptest.NewRecorder()
@@ -444,7 +515,7 @@ func TestWebHandler_NewTask_MethodNotAllowed(t *testing.T) {
 }
 
 func TestWebHandler_CreateNewTask_Success(t *testing.T) {
-	handler := createTestHandler(t)
+	handler := createHandlerWithSymlinkTemplates(t)
 
 	formData := "title=Test Task&priority=high&tags=frontend,urgent&notes=Test notes"
 	req := createTestRequest(http.MethodPost, "/new", formData)
@@ -457,7 +528,7 @@ func TestWebHandler_CreateNewTask_Success(t *testing.T) {
 }
 
 func TestWebHandler_CreateNewTask_MissingTitle(t *testing.T) {
-	handler := createSimpleTestHandler(t)
+	handler := createHandlerWithSymlinkTemplates(t)
 
 	formData := "priority=high&tags=frontend,urgent"
 	req := createTestRequest(http.MethodPost, "/new", formData)
@@ -471,7 +542,7 @@ func TestWebHandler_CreateNewTask_MissingTitle(t *testing.T) {
 }
 
 func TestWebHandler_CreateNewTask_WithJiraID(t *testing.T) {
-	handler := createTestHandler(t)
+	handler := createHandlerWithSymlinkTemplates(t)
 
 	formData := "jira_id=PROJ-123&title=Test Task&priority=normal"
 	req := createTestRequest(http.MethodPost, "/new", formData)
@@ -484,7 +555,7 @@ func TestWebHandler_CreateNewTask_WithJiraID(t *testing.T) {
 }
 
 func TestWebHandler_CreateNewTask_DefaultJiraID(t *testing.T) {
-	handler := createTestHandler(t)
+	handler := createHandlerWithSymlinkTemplates(t)
 
 	formData := "title=Test Task&priority=normal"
 	req := createTestRequest(http.MethodPost, "/new", formData)
@@ -497,7 +568,7 @@ func TestWebHandler_CreateNewTask_DefaultJiraID(t *testing.T) {
 }
 
 func TestWebHandler_CreateNewTask_InvalidFormData(t *testing.T) {
-	handler := createSimpleTestHandler(t)
+	handler := createHandlerWithSymlinkTemplates(t)
 
 	// Send malformed form data that can't be parsed
 	req := httptest.NewRequest(http.MethodPost, "/new", strings.NewReader("invalid form data"))
@@ -588,8 +659,8 @@ func TestWebHandler_SwaggerJSON(t *testing.T) {
 	assert.Contains(t, body, "Test API")
 }
 
-// Test helper function for creating a simple handler without complex templates
-func createSimpleTestHandler(t *testing.T) *WebHandler {
+// Test helper function for creating a simple handler without complex templates (unused)
+/* func createSimpleTestHandler(t *testing.T) *WebHandler {
 	// Create a temporary directory for templates
 	tempDir, err := os.MkdirTemp("", "test_templates")
 	require.NoError(t, err)
@@ -664,9 +735,10 @@ func createSimpleTestHandler(t *testing.T) *WebHandler {
 
 	return handler
 }
+*/
 
 func TestWebHandler_NewTask_GET_Simple(t *testing.T) {
-	handler := createSimpleTestHandler(t)
+	handler := createHandlerWithSymlinkTemplates(t)
 
 	// Debug: check current working directory
 	cwd, err := os.Getwd()

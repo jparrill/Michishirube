@@ -49,3 +49,9 @@ Thumbs.db
 
 # Security
 *.sarif
+
+# Backups
+backups/
+
+# DDBB
+michishirube_data

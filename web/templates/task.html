@@ -90,7 +90,7 @@
         <div class="links-container">
             {{if .Links}}
                 {{range .Links}}
-                <div class="link-item">
+                <div class="link-item" data-link-id="{{.ID}}">
                     <div class="link-header">
                         <span class="link-type">
                             {{if eq .Type "pull_request"}}🔗 Pull Request{{end}}
@@ -112,7 +112,7 @@
             {{else}}
                 <p class="no-links">No related links yet.</p>
             {{end}}
-            
+
             <div class="add-link-actions">
                 <button class="btn btn-secondary" onclick="showAddLinkForm('pull_request')">+ Add PR</button>
                 <button class="btn btn-secondary" onclick="showAddLinkForm('slack_thread')">+ Add Slack</button>
@@ -161,7 +161,7 @@
         <div class="comments-container">
             {{if .Comments}}
                 {{range .Comments}}
-                <div class="comment-item">
+                <div class="comment-item" data-comment-id="{{.ID}}">
                     <div class="comment-header">
                         <time class="comment-time" datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z"}}">
                             {{.CreatedAt.Format "Jan 2, 2006 15:04"}}
@@ -191,19 +191,19 @@
     <div class="task-metadata">
         <div class="metadata-grid">
             <div class="metadata-item">
-                <strong>Created:</strong> 
+                <strong>Created:</strong>
                 <time datetime="{{.Task.CreatedAt.Format "2006-01-02T15:04:05Z"}}">
                     {{.Task.CreatedAt.Format "January 2, 2006 at 15:04"}}
                 </time>
             </div>
             <div class="metadata-item">
-                <strong>Last Updated:</strong> 
+                <strong>Last Updated:</strong>
                 <time datetime="{{.Task.UpdatedAt.Format "2006-01-02T15:04:05Z"}}">
                     {{.Task.UpdatedAt.Format "January 2, 2006 at 15:04"}}
                 </time>
             </div>
             <div class="metadata-item">
-                <strong>Task ID:</strong> 
+                <strong>Task ID:</strong>
                 <code>{{.Task.ID}}</code>
             </div>
         </div>

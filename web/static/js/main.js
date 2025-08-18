@@ -11,15 +11,28 @@ const App = {
                     'Content-Type': 'application/json',
                 },
             };
-            
+
             const config = { ...defaultOptions, ...options };
-            
+
             try {
                 const response = await fetch(url, config);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                return await response.json();
+
+                // Handle empty responses (like 204 No Content)
+                if (response.status === 204 || response.headers.get('content-length') === '0') {
+                    return null;
+                }
+
+                // Try to parse JSON, but handle cases where response might be empty
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return await response.json();
+                }
+
+                // For non-JSON responses, return the text
+                return await response.text();
             } catch (error) {
                 console.error('API request failed:', error);
                 throw error;
@@ -54,10 +67,10 @@ const App = {
     // Loading indicator
     loading: {
         show(text = 'Loading...') {
-            const indicator = document.getElementById('loading-indicator') || 
+            const indicator = document.getElementById('loading-indicator') ||
                             document.getElementById('status-loading');
             if (indicator) {
-                const textElement = indicator.querySelector('#loading-text') || 
+                const textElement = indicator.querySelector('#loading-text') ||
                                   indicator.querySelector('span');
                 if (textElement) {
                     textElement.textContent = text;
@@ -89,7 +102,7 @@ const App = {
                 warning: '⚠️',
                 info: 'ℹ️'
             };
-            
+
             alert(`${emoji[type] || emoji.info} ${message}`);
         },
 
@@ -154,10 +167,10 @@ async function updateTaskStatus(selectElement) {
         });
 
         selectElement.defaultValue = newStatus;
-        
+
         // Refresh the page to update UI
         window.location.reload();
-        
+
     } catch (error) {
         console.error('Failed to update status:', error);
         selectElement.value = originalValue; // Revert change
@@ -181,7 +194,7 @@ async function updateTaskField(selectElement, field) {
         });
 
         selectElement.defaultValue = newValue;
-        
+
     } catch (error) {
         console.error(`Failed to update ${field}:`, error);
         selectElement.value = originalValue; // Revert change
@@ -243,23 +256,23 @@ function initializeKeyboardShortcuts() {
 // Report functionality
 async function generateReport() {
     App.loading.show('Generating report...');
-    
+
     try {
         const reportData = await App.api.get('/api/report');
-        
+
         let reportText = '## 📊 Weekly Status Report\n\n';
-        
+
         // Working on section
         reportText += '### 🦀 Things I\'ve been working on\n';
         if (reportData.working_on && reportData.working_on.length > 0) {
             reportData.working_on.forEach(task => {
                 const jiraId = task.jira_id !== 'NO-JIRA' ? `[${task.jira_id}] ` : '';
                 reportText += `- ${jiraId}${task.title}\n`;
-                
+
                 // Add links if they exist, grouped by type
                 if (task.links && task.links.length > 0) {
                     const linkGroups = {};
-                    
+
                     // Group links by type
                     task.links.forEach(link => {
                         if (!linkGroups[link.type]) {
@@ -267,13 +280,13 @@ async function generateReport() {
                         }
                         linkGroups[link.type].push(link);
                     });
-                    
+
                     // Format each group
                     Object.keys(linkGroups).forEach(type => {
                         const links = linkGroups[type];
                         let prefix = '';
                         let formattedLinks = [];
-                        
+
                         if (type === 'pull_request') {
                             prefix = 'PRs: ';
                             formattedLinks = links.map(link => {
@@ -300,7 +313,7 @@ async function generateReport() {
                                 return `[${linkText}](${link.url})`;
                             });
                         }
-                        
+
                         reportText += `  - ${prefix}${formattedLinks.join(', ')}\n`;
                     });
                 }
@@ -308,18 +321,18 @@ async function generateReport() {
         } else {
             reportText += '- No current work items\n';
         }
-        
+
         // Next up section
         reportText += '\n### 🖖 Things I plan on working on next\n';
         if (reportData.next_up && reportData.next_up.length > 0) {
             reportData.next_up.forEach(task => {
                 const jiraId = task.jira_id !== 'NO-JIRA' ? `[${task.jira_id}] ` : '';
                 reportText += `- ${jiraId}${task.title}\n`;
-                
+
                 // Add links if they exist, grouped by type
                 if (task.links && task.links.length > 0) {
                     const linkGroups = {};
-                    
+
                     // Group links by type
                     task.links.forEach(link => {
                         if (!linkGroups[link.type]) {
@@ -327,13 +340,13 @@ async function generateReport() {
                         }
                         linkGroups[link.type].push(link);
                     });
-                    
+
                     // Format each group
                     Object.keys(linkGroups).forEach(type => {
                         const links = linkGroups[type];
                         let prefix = '';
                         let formattedLinks = [];
-                        
+
                         if (type === 'pull_request') {
                             prefix = 'PRs: ';
                             formattedLinks = links.map(link => {
@@ -360,7 +373,7 @@ async function generateReport() {
                                 return `[${linkText}](${link.url})`;
                             });
                         }
-                        
+
                         reportText += `  - ${prefix}${formattedLinks.join(', ')}\n`;
                     });
                 }
@@ -368,25 +381,25 @@ async function generateReport() {
         } else {
             reportText += '- No high priority items planned\n';
         }
-        
+
         // Blockers section
         reportText += '\n### 🤦 Things that are blocking me\n';
         if (reportData.blockers && reportData.blockers.length > 0) {
             reportData.blockers.forEach(task => {
                 const jiraId = task.jira_id !== 'NO-JIRA' ? `[${task.jira_id}] ` : '';
                 reportText += `- ${jiraId}${task.title}\n`;
-                
+
                 // Add blockers if they exist
                 if (task.blockers && task.blockers.length > 0) {
                     task.blockers.forEach(blocker => {
                         reportText += `  - ⚠️ ${blocker}\n`;
                     });
                 }
-                
+
                 // Add links if they exist, grouped by type
                 if (task.links && task.links.length > 0) {
                     const linkGroups = {};
-                    
+
                     // Group links by type
                     task.links.forEach(link => {
                         if (!linkGroups[link.type]) {
@@ -394,13 +407,13 @@ async function generateReport() {
                         }
                         linkGroups[link.type].push(link);
                     });
-                    
+
                     // Format each group
                     Object.keys(linkGroups).forEach(type => {
                         const links = linkGroups[type];
                         let prefix = '';
                         let formattedLinks = [];
-                        
+
                         if (type === 'pull_request') {
                             prefix = 'PRs: ';
                             formattedLinks = links.map(link => {
@@ -427,7 +440,7 @@ async function generateReport() {
                                 return `[${linkText}](${link.url})`;
                             });
                         }
-                        
+
                         reportText += `  - ${prefix}${formattedLinks.join(', ')}\n`;
                     });
                 }
@@ -435,10 +448,10 @@ async function generateReport() {
         } else {
             reportText += '- No current blockers\n';
         }
-        
+
         // Copy to clipboard
         await navigator.clipboard.writeText(reportText);
-        
+
     } catch (error) {
         console.error('Failed to generate report:', error);
         App.notify.error('Failed to generate report');
@@ -451,10 +464,10 @@ async function generateReport() {
 function toggleReportDropdown() {
     const reportDropdown = document.getElementById('report-dropdown');
     const filtersDropdown = document.getElementById('filters-dropdown');
-    
+
     // Close filters dropdown if open
     filtersDropdown.classList.remove('show');
-    
+
     // Toggle report dropdown
     reportDropdown.classList.toggle('show');
 }
@@ -462,10 +475,10 @@ function toggleReportDropdown() {
 function toggleFiltersDropdown() {
     const reportDropdown = document.getElementById('report-dropdown');
     const filtersDropdown = document.getElementById('filters-dropdown');
-    
+
     // Close report dropdown if open
     reportDropdown.classList.remove('show');
-    
+
     // Toggle filters dropdown
     filtersDropdown.classList.toggle('show');
 }
@@ -474,17 +487,17 @@ function toggleFiltersDropdown() {
 function toggleIndicatorDropdown(element) {
     const dropdown = element.parentElement;
     const menu = dropdown.querySelector('.indicator-dropdown-menu');
-    
+
     // Close all other indicator dropdowns
     document.querySelectorAll('.indicator-dropdown-menu.show').forEach(otherMenu => {
         if (otherMenu !== menu) {
             otherMenu.classList.remove('show');
         }
     });
-    
+
     // Toggle current dropdown
     menu.classList.toggle('show');
-    
+
     // Prevent event bubbling
     event.stopPropagation();
 }
@@ -495,12 +508,12 @@ document.addEventListener('click', (event) => {
     const filtersDropdown = document.getElementById('filters-dropdown');
     const button = event.target.closest('.dropdown-toggle');
     const indicatorButton = event.target.closest('.indicator-dropdown-toggle');
-    
+
     if (!button) {
         if (reportDropdown) reportDropdown.classList.remove('show');
         if (filtersDropdown) filtersDropdown.classList.remove('show');
     }
-    
+
     // Close indicator dropdowns when clicking outside
     if (!indicatorButton && !event.target.closest('.indicator-dropdown-menu')) {
         document.querySelectorAll('.indicator-dropdown-menu.show').forEach(menu => {
@@ -513,7 +526,7 @@ document.addEventListener('click', (event) => {
 document.addEventListener('DOMContentLoaded', () => {
     initializeSearch();
     initializeKeyboardShortcuts();
-    
+
     console.log('🗯️ Michishirube loaded');
 });
 

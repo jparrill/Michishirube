@@ -132,6 +132,17 @@ Create a `.env` file from `.env.example` to customize:
 - `PORT`: Application port (default: 8080)
 - `LOG_LEVEL`: Logging level (debug, info, warn, error)
 - `DB_PATH`: Database file path (persisted in Docker volume)
+- `DB_VOLUME_PATH`: External folder for production database (optional)
+- `DEV_DB_VOLUME_PATH`: External folder for development database (optional)
+
+**Database Persistence Options:**
+1. **Docker Volumes** (default): Data persisted in Docker managed volumes
+2. **External Folder**: Mount a host directory for direct database access
+   ```bash
+   # Example: Use /home/user/michishirube-data for database
+   echo "DB_VOLUME_PATH=/home/user/michishirube-data" >> .env
+   docker-compose up -d
+   ```
 
 **Docker Commands:**
 - `make docker-build`: Single architecture build

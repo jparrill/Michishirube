@@ -26,8 +26,8 @@ services:
       - APP_BUILD_DATE=${APP_BUILD_DATE:-unknown}
       - APP_BUILT_BY=${APP_BUILT_BY:-docker-compose}
     volumes:
-      # Persist database
-      - michishirube_data:/data
+      # Persist database - use external directory if specified, otherwise use docker volume
+      - ${DB_VOLUME_PATH:-michishirube_data}:/data
       # Optional: mount custom config
       - ./config:/app/config:ro
     restart: unless-stopped
@@ -78,7 +78,7 @@ services:
       - APP_BUILT_BY=docker-compose-dev
     volumes:
       - .:/app
-      - michishirube_dev_data:/data
+      - ${DEV_DB_VOLUME_PATH:-michishirube_dev_data}:/data
       - go_mod_cache:/go/pkg/mod
     working_dir: /app
     command: ["go", "run", "./cmd/server"]

@@ -244,6 +244,8 @@ docker-help:
 	@echo "  LOG_LEVEL=info         - Log level (debug, info, warn, error)"
 	@echo "  DB_PATH=./app.db       - Database file path"
 	@echo "  DEV_PORT=8081          - Development mode port"
+	@echo "  DB_VOLUME_PATH=/path   - External folder for production DB (optional)"
+	@echo "  DEV_DB_VOLUME_PATH=/path - External folder for dev DB (optional)"
 	@echo ""
 	@echo "Docker workflow:"
 	@echo "  1. cp .env.example .env           - Create environment config"

@@ -9,11 +9,11 @@
         <div class="form-section">
             <div class="form-row">
                 <label for="jira_id">Jira ID:</label>
-                <input 
-                    type="text" 
-                    id="jira_id" 
-                    name="jira_id" 
-                    placeholder="OCPBUGS-1234 (optional)" 
+                <input
+                    type="text"
+                    id="jira_id"
+                    name="jira_id"
+                    placeholder="OCPBUGS-1234 (optional)"
                     value="{{.JiraID}}"
                     pattern="[A-Z]+-[0-9]*"
                     title="Format: PROJECT-NUMBER (e.g., OCPBUGS-1234)"
@@ -23,11 +23,11 @@
 
             <div class="form-row">
                 <label for="title">Title: <span class="required">*</span></label>
-                <input 
-                    type="text" 
-                    id="title" 
-                    name="title" 
-                    required 
+                <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    required
                     placeholder="Brief description of the task"
                     value="{{.Title}}"
                     maxlength="200"
@@ -56,9 +56,9 @@
                         </span>
                         {{end}}
                     </div>
-                    <input 
-                        type="text" 
-                        id="tag-input" 
+                    <input
+                        type="text"
+                        id="tag-input"
                         placeholder="Add tags..."
                         onkeypress="handleFormTagKeypress(event)"
                         autocomplete="off"
@@ -101,10 +101,10 @@
         <div class="form-section">
             <div class="form-row">
                 <label for="notes">Initial Notes <span class="optional">(optional)</span>:</label>
-                <textarea 
-                    id="notes" 
-                    name="notes" 
-                    rows="4" 
+                <textarea
+                    id="notes"
+                    name="notes"
+                    rows="4"
                     placeholder="Any additional context, requirements, or notes about this task..."
                     maxlength="1000"
                 >{{.Notes}}</textarea>

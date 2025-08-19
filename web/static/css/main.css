@@ -204,6 +204,13 @@ h4 { font-size: var(--font-size-lg); }
     line-height: 1;
 }
 
+.report-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    margin-right: var(--spacing-xs);
+}
+
 .logo {
     margin: 0;
 }

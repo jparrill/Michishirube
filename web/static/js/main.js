@@ -355,6 +355,99 @@ function formatLinksForReport(links) {
     return reportText;
 }
 
+// Helper function to format links for plain report (without markdown)
+function formatLinksForPlainReport(links) {
+    if (!links || links.length === 0) return '';
+
+    const linkGroups = {};
+
+    // Group links by type
+    links.forEach(link => {
+        if (!linkGroups[link.type]) {
+            linkGroups[link.type] = [];
+        }
+        linkGroups[link.type].push(link);
+    });
+
+    let reportText = '';
+
+    // Format each group
+    Object.keys(linkGroups).forEach(type => {
+        const typeLinks = linkGroups[type];
+        let prefix = '';
+        let formattedLinks = [];
+
+        if (type === 'pull_request') {
+            prefix = 'PRs:';
+            formattedLinks = typeLinks.map(link => {
+                // Use link title if available, otherwise use PR-XXXX as fallback
+                if (link.title && link.title !== link.url) {
+                    return `${link.title} (${link.url})`;
+                } else {
+                    const urlPath = link.url.split('/').pop();
+                    return `PR-${urlPath} (${link.url})`;
+                }
+            });
+        } else if (type === 'slack_thread') {
+            prefix = 'Slack:';
+            formattedLinks = typeLinks.map((link, index) => {
+                // Use link title if available, otherwise use thread-{index}
+                if (link.title && link.title !== link.url) {
+                    return `${link.title} (${link.url})`;
+                } else {
+                    return `thread-${index + 1} (${link.url})`;
+                }
+            });
+        } else if (type === 'jira_ticket') {
+            prefix = 'Jira related:';
+            formattedLinks = typeLinks.map(link => {
+                // Use link title if available, otherwise use JIRA ID from URL
+                if (link.title && link.title !== link.url) {
+                    return `${link.title} (${link.url})`;
+                } else {
+                    const urlPath = link.url.split('/').pop();
+                    return `${urlPath} (${link.url})`;
+                }
+            });
+        } else if (type === 'documentation') {
+            prefix = 'Docs:';
+            formattedLinks = typeLinks.map(link => {
+                // Use link title if available, otherwise use filename from URL
+                if (link.title && link.title !== link.url) {
+                    return `${link.title} (${link.url})`;
+                } else {
+                    const urlPath = link.url.split('/').pop();
+                    const linkText = urlPath.includes('.') ? urlPath.split('.')[0] : urlPath;
+                    return `${linkText} (${link.url})`;
+                }
+            });
+        } else {
+            prefix = `${type}:`;
+            formattedLinks = typeLinks.map((link, index) => {
+                // Use link title if available, otherwise use filename or title-{index}
+                if (link.title && link.title !== link.url && link.title !== '') {
+                    return `${link.title} (${link.url})`;
+                } else {
+                    const urlPath = link.url.split('/').pop();
+                    if (urlPath && urlPath !== '') {
+                        const linkText = urlPath.includes('.') ? urlPath.split('.')[0] : urlPath;
+                        return `${linkText} (${link.url})`;
+                    } else {
+                        return `title-${index + 1} (${link.url})`;
+                    }
+                }
+            });
+        }
+
+        reportText += `    - ${prefix}\n`;
+        formattedLinks.forEach(link => {
+            reportText += `      - ${link}\n`;
+        });
+    });
+
+    return reportText;
+}
+
 async function generateReport() {
     App.loading.show('Generating report...');
 
@@ -424,6 +517,80 @@ async function generateReport() {
     } catch (error) {
         console.error('Failed to generate report:', error);
         App.notify.error('Failed to generate report');
+    } finally {
+        App.loading.hide();
+    }
+}
+
+async function generatePlainReport() {
+    App.loading.show('Generating plain report...');
+
+    try {
+        const reportData = await App.api.get('/api/report');
+
+        let reportText = '';
+
+        // Working on section
+        reportText += '- 🦀 Things I\'ve been working on\n';
+        if (reportData.working_on && reportData.working_on.length > 0) {
+            reportData.working_on.forEach(task => {
+                const jiraId = task.jira_id !== 'NO-JIRA' ? `[${task.jira_id}] ` : '';
+                reportText += `  - ${jiraId}${task.title}\n`;
+
+                // Add links if they exist, grouped by type
+                if (task.links && task.links.length > 0) {
+                    reportText += formatLinksForPlainReport(task.links);
+                }
+            });
+        } else {
+            reportText += '  - No current work items\n';
+        }
+
+        // Next up section
+        reportText += '\n- 🖖 Things I plan on working on next\n';
+        if (reportData.next_up && reportData.next_up.length > 0) {
+            reportData.next_up.forEach(task => {
+                const jiraId = task.jira_id !== 'NO-JIRA' ? `[${task.jira_id}] ` : '';
+                reportText += `  - ${jiraId}${task.title}\n`;
+
+                // Add links if they exist, grouped by type
+                if (task.links && task.links.length > 0) {
+                    reportText += formatLinksForPlainReport(task.links);
+                }
+            });
+        } else {
+            reportText += '  - No high priority items planned\n';
+        }
+
+        // Blockers section
+        reportText += '\n- 🤦 Things that are blocking me\n';
+        if (reportData.blockers && reportData.blockers.length > 0) {
+            reportData.blockers.forEach(task => {
+                const jiraId = task.jira_id !== 'NO-JIRA' ? `[${task.jira_id}] ` : '';
+                reportText += `  - ${jiraId}${task.title}\n`;
+
+                // Add blockers if they exist
+                if (task.blockers && task.blockers.length > 0) {
+                    task.blockers.forEach(blocker => {
+                        reportText += `    - ⚠️ ${blocker}\n`;
+                    });
+                }
+
+                // Add links if they exist, grouped by type
+                if (task.links && task.links.length > 0) {
+                    reportText += formatLinksForPlainReport(task.links);
+                }
+            });
+        } else {
+            reportText += '  - No current blockers\n';
+        }
+
+        // Copy to clipboard
+        await navigator.clipboard.writeText(reportText);
+
+    } catch (error) {
+        console.error('Failed to generate plain report:', error);
+        App.notify.error('Failed to generate plain report');
     } finally {
         App.loading.hide();
     }

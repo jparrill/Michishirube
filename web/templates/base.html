@@ -61,17 +61,21 @@
                             </button>
                             <div class="dropdown-menu" id="report-dropdown">
                                 <button class="dropdown-item" onclick="generateReport()">
-                                    📋 Copy Report
+                                    <img src="/static/assets/markdown-icon.png" alt="Markdown" class="report-icon">
+                                    Markdown Report
+                                </button>
+                                <button class="dropdown-item" onclick="generatePlainReport()">
+                                    🔗 Plain Report
                                 </button>
                             </div>
                         </div>
                     </div>
                     <form class="header-search-form" method="GET" action="/">
                         <div class="search-controls">
-                            <input 
-                                type="text" 
-                                name="search" 
-                                placeholder="Search tasks..." 
+                            <input
+                                type="text"
+                                name="search"
+                                placeholder="Search tasks..."
                                 value="{{.SearchQuery}}"
                                 class="header-search-input"
                             >

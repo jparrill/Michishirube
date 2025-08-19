@@ -346,7 +346,10 @@ function formatLinksForReport(links) {
             });
         }
 
-        reportText += `  - ${prefix}${formattedLinks.join(', ')}\n`;
+        reportText += `  - ${prefix}\n`;
+        formattedLinks.forEach(link => {
+            reportText += `    - ${link}\n`;
+        });
     });
 
     return reportText;

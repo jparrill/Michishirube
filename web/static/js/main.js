@@ -278,7 +278,7 @@ function formatLinksForReport(links) {
 
     let reportText = '';
 
-    // Format each group
+    // Format each group of links
     Object.keys(linkGroups).forEach(type => {
         const typeLinks = linkGroups[type];
         let prefix = '';

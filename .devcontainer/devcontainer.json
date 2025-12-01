@@ -1,0 +1,67 @@
+{
+  "name": "Michishirube Go Dev",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "args": {
+      "TZ": "${localEnv:TZ:America/Los_Angeles}"
+    }
+  },
+  "remoteUser": "developer",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+    "source=michishirube-go-pkg-${devcontainerId},target=/go/pkg,type=volume",
+    "source=michishirube-claude-config-${devcontainerId},target=/home/developer/.claude,type=volume"
+  ],
+  "runArgs": [
+    "--cap-add=NET_ADMIN",
+    "--cap-add=NET_RAW"
+  ],
+  "workspaceFolder": "/workspace",
+  "postCreateCommand": "cd /workspace && bash .devcontainer/setup-project.sh",
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/developer/.claude",
+    "CGO_ENABLED": "1"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "ms-vscode.makefile-tools",
+        "humao.rest-client",
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "go.formatTool": "goimports",
+        "go.lintTool": "staticcheck",
+        "go.lintOnSave": "package",
+        "go.testFlags": ["-v", "-race"],
+        "go.testTimeout": "30s",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.organizeImports": "explicit"
+        },
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "bash",
+            "icon": "terminal-bash"
+          },
+          "zsh": {
+            "path": "zsh",
+            "icon": "terminal"
+          }
+        },
+        "files.associations": {
+          "*.yaml": "yaml",
+          "*.yml": "yaml",
+          "Dockerfile*": "dockerfile",
+          "Makefile": "makefile"
+        }
+      }
+    }
+  }
+}

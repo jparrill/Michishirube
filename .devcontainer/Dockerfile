@@ -25,7 +25,7 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         iproute2 procps lsof htop net-tools psmisc \
         rsync unzip zip nano vim less jq sudo zsh \
         # Network tools for devcontainer security
-        iptables ipset dnsutils aggregate \
+        iptables ipset dnsutils aggregate python3 \
         # SQLite for database management
         sqlite3 \
         # Build essentials
@@ -60,6 +60,10 @@ RUN echo developer ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/developer \
 COPY .devcontainer/init-firewall.sh /usr/local/bin/init-firewall.sh
 RUN chmod +x /usr/local/bin/init-firewall.sh
 
+# Create Go workspace with proper permissions (as root before switching users)
+RUN mkdir -p /go/bin /go/src /go/pkg \
+    && chown -R developer:developer /go
+
 # Switch to developer user and setup environment
 USER developer
 WORKDIR /home/developer
@@ -73,18 +77,14 @@ RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master
     && echo 'export GOPATH="/go"' >> ~/.zshrc \
     && echo 'export PATH="$GOPATH/bin:$PATH"' >> ~/.zshrc
 
-# Create Go workspace with proper permissions
-RUN sudo mkdir -p /go/bin /go/src /go/pkg \
-    && sudo chown -R developer:developer /go
-
-# Install all Go tools for development
-RUN go install golang.org/x/tools/gopls@latest \
-    && go install github.com/go-delve/delve/cmd/dlv@latest \
-    && go install honnef.co/go/tools/cmd/staticcheck@latest \
-    && go install golang.org/x/tools/cmd/goimports@latest \
-    && go install github.com/golang/mock/mockgen@latest \
-    && go install github.com/swaggo/swag/cmd/swag@latest \
-    && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+# Install all Go tools for development (pinned versions for reproducibility)
+RUN go install golang.org/x/tools/gopls@v0.16.2 \
+    && go install github.com/go-delve/delve/cmd/dlv@v1.23.1 \
+    && go install honnef.co/go/tools/cmd/staticcheck@2024.1.1 \
+    && go install golang.org/x/tools/cmd/goimports@v0.26.0 \
+    && go install go.uber.org/mock/mockgen@v0.4.0 \
+    && go install github.com/swaggo/swag/cmd/swag@v1.16.4 \
+    && go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0
 
 # Create Claude directory
 RUN mkdir -p /home/developer/.claude

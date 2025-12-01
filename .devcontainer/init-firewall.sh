@@ -42,7 +42,7 @@ ipset create allowed-domains hash:net
 
 # Fetch GitHub meta information and aggregate + add their IP ranges
 echo "Fetching GitHub IP ranges..."
-gh_ranges=$(curl -s https://api.github.com/meta)
+gh_ranges=$(curl -s --connect-timeout 5 --max-time 10 https://api.github.com/meta)
 if [ -z "$gh_ranges" ]; then
     echo "ERROR: Failed to fetch GitHub IP ranges"
     exit 1
@@ -90,15 +90,52 @@ for domain in \
     done < <(echo "$ips")
 done
 
-# Get host IP from default route
-HOST_IP=$(ip route | grep default | cut -d" " -f3)
-if [ -z "$HOST_IP" ]; then
-    echo "ERROR: Failed to detect host IP"
+# Get host network with proper CIDR detection
+echo "Detecting host network configuration..."
+
+# Get default route interface and gateway
+DEFAULT_ROUTE=$(ip route | grep default | head -1)
+if [ -z "$DEFAULT_ROUTE" ]; then
+    echo "ERROR: Failed to detect default route"
     exit 1
 fi
 
-HOST_NETWORK=$(echo "$HOST_IP" | sed "s/\.[0-9]*$/.0\/24/")
-echo "Host network detected as: $HOST_NETWORK"
+HOST_IP=$(echo "$DEFAULT_ROUTE" | awk '{print $3}')
+INTERFACE=$(echo "$DEFAULT_ROUTE" | awk '{print $5}')
+
+if [ -z "$HOST_IP" ] || [ -z "$INTERFACE" ]; then
+    echo "ERROR: Failed to detect host IP ($HOST_IP) or interface ($INTERFACE)"
+    exit 1
+fi
+
+# Get actual network CIDR from interface configuration
+HOST_NETWORK=$(ip addr show "$INTERFACE" | grep "inet " | grep "$HOST_IP" | awk '{print $2}' | cut -d'/' -f1)
+HOST_CIDR=$(ip addr show "$INTERFACE" | grep "inet " | grep "$HOST_IP" | awk '{print $2}' | cut -d'/' -f2)
+
+if [ -z "$HOST_NETWORK" ] || [ -z "$HOST_CIDR" ]; then
+    echo "ERROR: Failed to detect network configuration from interface $INTERFACE"
+    exit 1
+fi
+
+# Calculate network address from IP and CIDR
+NETWORK_ADDR=$(python3 -c "
+import ipaddress
+import sys
+try:
+    network = ipaddress.IPv4Network('$HOST_IP/$HOST_CIDR', strict=False)
+    print(network.network_address)
+except Exception as e:
+    print('ERROR: ' + str(e), file=sys.stderr)
+    sys.exit(1)
+")
+
+if [ -z "$NETWORK_ADDR" ]; then
+    echo "ERROR: Failed to calculate network address"
+    exit 1
+fi
+
+HOST_NETWORK="$NETWORK_ADDR/$HOST_CIDR"
+echo "Host network detected as: $HOST_NETWORK (interface: $INTERFACE, gateway: $HOST_IP)"
 
 # Set up remaining iptables rules
 iptables -A INPUT -s "$HOST_NETWORK" -j ACCEPT

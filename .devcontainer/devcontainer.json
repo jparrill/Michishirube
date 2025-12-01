@@ -18,7 +18,7 @@
     "--cap-add=NET_RAW"
   ],
   "workspaceFolder": "/workspace",
-  "postCreateCommand": "cd /workspace && go mod download && make generate",
+  "postCreateCommand": "cd /workspace && bash .devcontainer/setup-project.sh",
   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/developer/.claude",

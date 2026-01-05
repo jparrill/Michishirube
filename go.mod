@@ -5,7 +5,7 @@ go 1.24.6
 require (
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
-	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/mattn/go-sqlite3 v1.14.33
 	github.com/swaggo/http-swagger/v2 v2.0.2
 	github.com/swaggo/swag v1.16.6
 	gopkg.in/yaml.v3 v3.0.1
